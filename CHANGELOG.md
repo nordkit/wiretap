@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `HasHttpLogs` trait for retrieving associated logs from Eloquent models.
 - `LoggingClient` for a pre-wired Guzzle wrapper.
 - `LoggingMiddleware` for raw Guzzle `HandlerStack` integration.
-- `Wiretap` facade with `log()`, `record()`, and `startTimer()` methods.
+- `Wiretap` facade with `log()`, `record()`, and `start()` methods.
 
 [Unreleased]: https://github.com/nordkit/wiretap/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/nordkit/wiretap/releases/tag/v1.0.0

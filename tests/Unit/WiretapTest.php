@@ -74,7 +74,7 @@ it('swallows exceptions in log()', function (): void {
     expect($writer->called)->toBeTrue();
 });
 
-it('accurately tracks duration with startTimer() and stopTimer() implicitly via log()', function (): void {
+it('accurately tracks duration with start() and stopTimer() implicitly via log()', function (): void {
     $writer = new class implements HttpLogWriter
     {
         public ?HttpLogEntry $entry = null;
@@ -95,7 +95,7 @@ it('accurately tracks duration with startTimer() and stopTimer() implicitly via 
         ]),
     );
 
-    $timer = $wiretap->startTimer();
+    $timer = $wiretap->start();
 
     // Simulate some work... sleep for 10ms
     usleep(10000);
@@ -155,7 +155,7 @@ it('defaults durationMs to 0 when no timer is passed to log()', function (): voi
         ->and($writer->entry->durationMs)->toBe(0);
 });
 
-it('startTimer() returns a Closure that yields a positive integer', function (): void {
+it('start() returns a Closure that yields a positive integer', function (): void {
     $wiretap = new Wiretap(
         new class implements HttpLogWriter
         {
@@ -169,7 +169,7 @@ it('startTimer() returns a Closure that yields a positive integer', function ():
         ]),
     );
 
-    $timer = $wiretap->startTimer();
+    $timer = $wiretap->start();
 
     expect($timer)->toBeInstanceOf(Closure::class);
 

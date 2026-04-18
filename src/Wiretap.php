@@ -26,7 +26,7 @@ class Wiretap
      * The closure captures the start time; no state is stored on the instance, so abandoned
      * timers in long-running processes (Octane/Swoole) do not leak memory.
      */
-    public function startTimer(): Closure
+    public function start(): Closure
     {
         $start = hrtime(true);
 
