@@ -239,7 +239,7 @@ use Nordkit\Wiretap\HttpDirection;
 use Nordkit\Wiretap\Laravel\Facades\Wiretap;
 
 // 1. Start the internal logger timer — returns a Closure that yields elapsed ms when called
-$timer = Wiretap::startTimer();
+$timer = Wiretap::start();
 
 // 2. Perform your manual request/interaction...
 $response = $customSdk->syncData(['foo' => 'bar']);

@@ -92,7 +92,7 @@ it('resolves duration from timer in log()', function (): void {
         ]),
     );
 
-    $timer = $wiretap->startTimer();
+    $timer = $wiretap->start();
     usleep(2_000);
     $wiretap->log(HttpDirection::Outbound, 'test', 'https://example.com', 'GET', [], null, 200, [], null, $timer);
 
