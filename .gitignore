@@ -1,0 +1,9 @@
+.idea/
+/vendor/
+/node_modules/
+/.phpunit.cache/
+/.pest/
+composer.lock
+.DS_Store
+coverage/
+.phpunit.result.cache

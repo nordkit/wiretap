@@ -1,0 +1,53 @@
+{
+    "name": "nordkit/wiretap",
+    "description": "Tap into your app's HTTP traffic. Log, filter, and redact requests with zero boilerplate.",
+    "type": "library",
+    "license": "MIT",
+    "keywords": ["laravel", "guzzle", "http", "logging", "wiretap", "monitoring", "wiretap"],
+    "require": {
+        "php": "^8.3",
+        "illuminate/support": "^11.0|^12.0|^13.0",
+        "illuminate/queue": "^11.0|^12.0|^13.0",
+        "illuminate/database": "^11.0|^12.0|^13.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^9.0|^10.0|^11.0",
+        "pestphp/pest": "^4.4.1",
+        "pestphp/pest-plugin-laravel": "^4.1.0",
+        "laravel/pint": "^1.0",
+        "guzzlehttp/guzzle": "^7.8"
+    },
+    "suggest": {
+        "guzzlehttp/guzzle": "Required for the Guzzle middleware adapter (^7.8)."
+    },
+    "autoload": {
+        "psr-4": {
+            "Nordkit\\Wiretap\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Nordkit\\Wiretap\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": ["Nordkit\\Wiretap\\Laravel\\WiretapServiceProvider"],
+            "aliases": { "Wiretap": "Nordkit\\Wiretap\\Laravel\\Facades\\Wiretap" }
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/pest --compact",
+        "test:coverage": "vendor/bin/pest --coverage",
+        "lint": "vendor/bin/pint",
+        "lint:test": "vendor/bin/pint --test"
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        },
+        "audit": {
+            "ignore": ["PKSA-5jz8-6tcw-pbk4", "PKSA-z3gr-8qht-p93v"]
+        }
+    }
+}
