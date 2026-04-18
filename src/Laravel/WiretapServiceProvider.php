@@ -11,14 +11,14 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\ServiceProvider;
 use Nordkit\Wiretap\Contracts\HttpLogWriter;
-use Nordkit\Wiretap\HttpLogFilter;
 use Nordkit\Wiretap\Guzzle\LoggingClient;
+use Nordkit\Wiretap\HttpLogFilter;
+use Nordkit\Wiretap\HttpLogRedactor;
 use Nordkit\Wiretap\Laravel\Listeners\RecordFailedConnection;
 use Nordkit\Wiretap\Laravel\Listeners\RecordOutboundRequest;
 use Nordkit\Wiretap\Laravel\Models\HttpLog;
 use Nordkit\Wiretap\Laravel\Writers\EloquentWriter;
 use Nordkit\Wiretap\Laravel\Writers\LogWriter;
-use Nordkit\Wiretap\HttpLogRedactor;
 use Nordkit\Wiretap\Wiretap;
 
 class WiretapServiceProvider extends ServiceProvider

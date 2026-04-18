@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use Nordkit\Wiretap\HttpLogFilter;
 use Nordkit\Wiretap\HttpDirection;
 use Nordkit\Wiretap\HttpLogEntry;
+use Nordkit\Wiretap\HttpLogFilter;
 
 function makeEntry(string $url): HttpLogEntry
 {

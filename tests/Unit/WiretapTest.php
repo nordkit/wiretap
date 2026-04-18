@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use Nordkit\Wiretap\Contracts\HttpLogWriter;
-use Nordkit\Wiretap\HttpLogFilter;
 use Nordkit\Wiretap\HttpDirection;
 use Nordkit\Wiretap\HttpLogEntry;
+use Nordkit\Wiretap\HttpLogFilter;
 use Nordkit\Wiretap\HttpLogRedactor;
 use Nordkit\Wiretap\Wiretap;
 

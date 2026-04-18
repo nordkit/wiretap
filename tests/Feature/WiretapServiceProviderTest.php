@@ -5,12 +5,12 @@ declare(strict_types=1);
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Foundation\Exceptions\Handler;
 use Nordkit\Wiretap\Contracts\HttpLogWriter;
-use Nordkit\Wiretap\HttpLogFilter;
 use Nordkit\Wiretap\HttpDirection;
 use Nordkit\Wiretap\HttpLogEntry;
+use Nordkit\Wiretap\HttpLogFilter;
+use Nordkit\Wiretap\HttpLogRedactor;
 use Nordkit\Wiretap\Laravel\LoggableScope;
 use Nordkit\Wiretap\Laravel\Writers\LogWriter;
-use Nordkit\Wiretap\HttpLogRedactor;
 use Nordkit\Wiretap\Wiretap;
 
 it('resolves Wiretap from the container', function (): void {
@@ -255,11 +255,12 @@ it('calls report() when debug is true and an exception occurs inside log()', fun
     $wiretap->log(
         direction: HttpDirection::Outbound, driver: 'test', url: 'https://example.com',
         method: 'GET', requestHeaders: [], requestBody: null, responseStatus: 200,
-        responseHeaders: [], responseBody: null, timer: function() { throw new RuntimeException('Timer failed'); },
+        responseHeaders: [], responseBody: null, timer: function () {
+            throw new RuntimeException('Timer failed');
+        },
     );
 
     expect($reported)->toHaveCount(1)
         ->and($reported[0])->toBeInstanceOf(RuntimeException::class)
         ->and($reported[0]->getMessage())->toBe('Timer failed');
 });
-

@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Nordkit\Wiretap\Laravel\Listeners;
 
 use Illuminate\Http\Client\Events\ConnectionFailed;
+use Nordkit\Wiretap\Concerns\FlattensHeaders;
 use Nordkit\Wiretap\HttpDirection;
 use Nordkit\Wiretap\HttpLogEntry;
-use Nordkit\Wiretap\Concerns\FlattensHeaders;
 use Nordkit\Wiretap\Wiretap;
 
 /**

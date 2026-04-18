@@ -7,7 +7,7 @@ namespace Nordkit\Wiretap;
 /**
  * Immutable value object representing a single HTTP log event.
  *
- * @property-read \Nordkit\Wiretap\HttpDirection $direction
+ * @property-read HttpDirection $direction
  * @property-read string $driver
  * @property-read string $url
  * @property-read string $method

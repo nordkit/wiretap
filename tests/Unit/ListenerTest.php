@@ -10,12 +10,12 @@ use Illuminate\Http\Client\Events\ResponseReceived;
 use Illuminate\Http\Client\Request;
 use Illuminate\Http\Client\Response;
 use Nordkit\Wiretap\Contracts\HttpLogWriter;
-use Nordkit\Wiretap\HttpLogFilter;
 use Nordkit\Wiretap\HttpLogEntry;
+use Nordkit\Wiretap\HttpLogFilter;
+use Nordkit\Wiretap\HttpLogRedactor;
 use Nordkit\Wiretap\Laravel\Listeners\RecordFailedConnection;
 use Nordkit\Wiretap\Laravel\Listeners\RecordOutboundRequest;
 use Nordkit\Wiretap\Laravel\LoggableScope;
-use Nordkit\Wiretap\HttpLogRedactor;
 use Nordkit\Wiretap\Wiretap;
 
 /**

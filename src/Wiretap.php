@@ -6,8 +6,6 @@ namespace Nordkit\Wiretap;
 
 use Closure;
 use Nordkit\Wiretap\Contracts\HttpLogWriter;
-use Nordkit\Wiretap\HttpLogFilter;
-use Nordkit\Wiretap\HttpLogRedactor;
 use Throwable;
 
 /**
@@ -45,6 +43,7 @@ class Wiretap
      *
      * @param  array<string, string|list<string>>  $requestHeaders
      * @param  array<string, string|list<string>>  $responseHeaders
+     *
      * @throws Throwable If debug mode is enabled and an exception occurs during logging
      */
     public function log(

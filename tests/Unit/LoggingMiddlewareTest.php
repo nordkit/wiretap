@@ -11,10 +11,10 @@ use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\Psr7\Utils;
 use Nordkit\Wiretap\Contracts\HttpLogWriter;
-use Nordkit\Wiretap\HttpLogFilter;
 use Nordkit\Wiretap\Guzzle\LoggingMiddleware;
 use Nordkit\Wiretap\HttpDirection;
 use Nordkit\Wiretap\HttpLogEntry;
+use Nordkit\Wiretap\HttpLogFilter;
 use Nordkit\Wiretap\HttpLogRedactor;
 use Nordkit\Wiretap\Wiretap;
 
@@ -169,13 +169,13 @@ it('flattens array header values to comma-separated strings', function (): void 
     [$wiretap, $calls] = makeGuzzleCapturingWiretap();
 
     $mock = new MockHandler([
-        new Response(200, ['X-Custom-Response' => ['A', 'B', 'C']])
+        new Response(200, ['X-Custom-Response' => ['A', 'B', 'C']]),
     ]);
     $stack = HandlerStack::create($mock);
     $stack->push(LoggingMiddleware::make($wiretap));
 
     (new Client(['handler' => $stack]))->get('https://api.example.com/data', [
-        'headers' => ['X-Custom-Request' => ['1', '2', '3']]
+        'headers' => ['X-Custom-Request' => ['1', '2', '3']],
     ]);
 
     expect($calls)->toHaveCount(1)
@@ -191,7 +191,7 @@ it('uses duration from TransferStats when provided', function (): void {
     $stack->push(LoggingMiddleware::make($wiretap));
 
     (new Client(['handler' => $stack]))->get('https://api.example.com/data', [
-        'transfer_time' => 0.55 // 550ms, recognized by MockHandler to populate TransferStats
+        'transfer_time' => 0.55, // 550ms, recognized by MockHandler to populate TransferStats
     ]);
 
     expect($calls)->toHaveCount(1)

@@ -18,10 +18,10 @@ class WriteHttpLogJob implements ShouldQueue
 {
     use Queueable;
 
-    /** @var int  Maximum number of times the job may be attempted */
+    /** @var int Maximum number of times the job may be attempted */
     public int $tries = 3;
 
-    /** @var int  Number of seconds to wait before retrying the job */
+    /** @var int Number of seconds to wait before retrying the job */
     public int $backoff = 5;
 
     public function __construct(
