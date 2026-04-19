@@ -42,6 +42,12 @@ You can publish the config file with:
 php artisan vendor:publish --tag="wiretap-config"
 ```
 
+> **Upgrading from an earlier version?** Migrations are auto-loaded by the service provider, so running `php artisan migrate` is all that is needed to pick up new columns. If you previously published the migration files into your own `database/migrations` directory, re-publish with `--force` to get the latest files before migrating:
+> ```bash
+> php artisan vendor:publish --tag="wiretap-migrations" --force
+> php artisan migrate
+> ```
+
 ### Non-Laravel Projects
 
 If you are using this package in a standalone PHP application (without the Laravel framework), you will need to manually handle the database schema or inject a custom `TraceWriter` into the `Wiretap`.

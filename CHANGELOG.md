@@ -16,6 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ipAddress` parameter added to `Wiretap::trace()` (optional, defaults to `null`) — non-Laravel apps that build a custom inbound tracing layer can pass the caller's IP directly.
 - `ip_address` included in `LogWriter` log context when set.
 
+### Upgrade notes
+Run `php artisan migrate` to apply the new `ip_address` column. The migration is auto-loaded by the service provider — no need to re-publish. If you have previously published the migrations, run:
+```bash
+php artisan vendor:publish --tag="wiretap-migrations" --force
+php artisan migrate
+```
+
 ## [2.2.0] - 2026-04-19
 
 ### Added
