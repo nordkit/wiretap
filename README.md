@@ -101,7 +101,7 @@ Every option in `config/wiretap.php` is documented with an inline comment. The m
 - **`driver`** — `database` (default, queued via `WriteTraceJob`) or `log` (streams to a Laravel log channel).
 - **`outbound.*`** — controls the Laravel HTTP Client and Guzzle adapters, plus host/path filtering for outbound requests.
 - **`inbound.*`** — opt-in capture of incoming requests. Disabled by default (`WIRETAP_INBOUND=false`). Includes the same host/path filtering as outbound.
-- **`store_request_body` / `store_response_body`** — toggle body capture. Binary content types (`image/*`, `video/*`, `audio/*`, `multipart/form-data`, `application/octet-stream`, `application/pdf`, `application/zip`) are always stored as `null` regardless of this setting.
+- **`store_request_body` / `store_response_body`** — toggle body capture. Binary content types (`image/*`, `video/*`, `audio/*`, `multipart/form-data`, `application/octet-stream`, `application/pdf`, `application/zip`) are never stored as raw bytes — instead a `[binary: filename.ext]` placeholder is stored, with the filename extracted from `Content-Disposition` where available.
 - **`max_body_bytes`** — caps stored body size to 64 KB by default. Set to `null` for unlimited.
 - **`redact_request_headers` / `redact_response_headers` / `redact_body_keys`** — lists of headers and JSON keys to scrub before anything reaches storage.
 

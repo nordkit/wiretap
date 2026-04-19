@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `DatabaseWriter` now strips the `traceable` object from `HttpExchange` before passing it to `WriteTraceJob`. This prevents serialization failures when the traceable is an object that cannot be serialized by queue drivers (e.g. anonymous classes).
-- `TraceRedactor::processBody()` now nulls out request and response bodies for all binary content types: `image/*`, `video/*`, `audio/*`, `multipart/form-data`, `application/octet-stream`, `application/pdf`, `application/zip`, `application/gzip`, and `application/x-tar`. Previously only `multipart/form-data` and `application/octet-stream` were handled, causing images, PDFs, and other binary files under `max_body_bytes` to be stored as raw binary data in the database.
+- `TraceRedactor::processBody()` now stores a `[binary: filename.ext]` placeholder instead of `null` for binary content type bodies. The filename is extracted from the `Content-Disposition` header or the multipart part header when available; falls back to `[binary: content/type]` when no filename can be determined. Previously only `multipart/form-data` and `application/octet-stream` were handled at all, causing images, PDFs, and other binary files under `max_body_bytes` to be stored as raw binary data in the database. Now covers: `image/*`, `video/*`, `audio/*`, `multipart/form-data`, `application/octet-stream`, `application/pdf`, `application/zip`, `application/gzip`, and `application/x-tar`.
 
 ## [2.0.0] - 2026-04-19
 

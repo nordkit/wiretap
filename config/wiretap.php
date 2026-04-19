@@ -139,11 +139,14 @@ return [
     | store_request_body / store_response_body: set to false to always discard
     |   the body, regardless of content type (e.g. for privacy or storage reasons).
     |
-    | Bodies with inherently binary content types are always stored as null,
-    | even when store_*_body is true. This covers: image/*, video/*, audio/*,
-    | multipart/form-data, application/octet-stream, application/pdf,
-    | application/zip, application/gzip, and application/x-tar.
-    | Binary bodies cannot be meaningfully redacted or stored as text.
+    | Bodies with inherently binary content types cannot be meaningfully redacted
+    | or stored as text. Instead of null, a '[binary: filename.ext]' placeholder
+    | is stored. The filename is extracted from the Content-Disposition header or
+    | the multipart part header when available; otherwise the content type is used
+    | as the fallback — e.g. '[binary: image/png]'.
+    | Affected types: image/*, video/*, audio/*, multipart/form-data,
+    | application/octet-stream, application/pdf, application/zip,
+    | application/gzip, application/x-tar.
     |
     | max_body_bytes: caps the stored body length. Bodies exceeding this limit
     |   are truncated and suffixed with "... [TRUNCATED]". Set to null for unlimited.

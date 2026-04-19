@@ -11,8 +11,11 @@ use Nordkit\Wiretap\HttpExchange;
  *
      * Steps applied in order:
      *  1. Strip / replace matching request and response headers with "[REDACTED]".
- *      *  2. Null out bodies with binary content types (image/*, video/*, audio/*, multipart/form-data,
- *      *     application/octet-stream, application/pdf, application/zip, application/gzip, application/x-tar).
+ *      *  2. Replace binary content type bodies with a '[binary: filename.ext]' placeholder
+ *      *     (image/*, video/*, audio/*, multipart/form-data, application/octet-stream,
+ *      *     application/pdf, application/zip, application/gzip, application/x-tar).
+ *      *     The filename is extracted from Content-Disposition or the multipart part header.
+ *      *     Falls back to '[binary: content/type]' when no filename is available.
  *      *  3. Recursively replace matching JSON or form-encoded body keys with "[REDACTED]".
      *  4. Truncate bodies that exceed max_body_bytes.
      *  5. Null out bodies if store_request_body / store_response_body is false.
@@ -94,7 +97,11 @@ class TraceRedactor
         }
 
         if ($this->isBinaryContentType($contentType)) {
-            return null;
+            $filename = $this->extractFilename($contentType, $headers, $body);
+
+            return $filename !== null
+                ? '[binary: '.$filename.']'
+                : '[binary: '.$contentType.']';
         }
 
         // Truncate the raw body BEFORE redacting so redaction always operates on complete, valid data.
@@ -134,7 +141,56 @@ class TraceRedactor
     }
 
     /**
-     * Inspect the Content-Type header and redact matching keys from a JSON or
+     * Attempt to extract a filename for a binary body.
+     *
+     * Checks in order:
+     *  1. Content-Disposition header (covers both responses with attachment; filename="..."
+     *     and requests with application/octet-stream + Content-Disposition).
+     *  2. First part of a multipart/form-data body (parses the boundary to find filename=).
+     *
+     * Returns null when no filename can be determined.
+     *
+     * @param  array<string, string|list<string>>  $headers
+     */
+    private function extractFilename(string $contentType, array $headers, string $body): ?string
+    {
+        // 1. Check Content-Disposition header.
+        foreach ($headers as $k => $v) {
+            if (strtolower($k) === 'content-disposition') {
+                $disposition = is_array($v) ? $v[0] : $v;
+                if (preg_match('/filename\*=UTF-8\'\'([^\s;]+)/i', $disposition, $m)) {
+                    return rawurldecode($m[1]);
+                }
+                if (preg_match('/filename=["\']?([^"\';\s]+)["\']?/i', $disposition, $m)) {
+                    return trim($m[1], '"\'');
+                }
+            }
+        }
+
+        // 2. Parse the first multipart part header for a filename.
+        if (str_starts_with($contentType, 'multipart/form-data')) {
+            if (preg_match('/boundary=([^\s;]+)/i', $contentType, $m)) {
+                $boundary = '--'.trim($m[1], '"');
+                // Only inspect the first ~1 KB to avoid scanning large binary payloads.
+                $head = substr($body, 0, 1024);
+                $start = strpos($head, $boundary);
+                if ($start !== false) {
+                    $partStart = $start + strlen($boundary);
+                    $partEnd   = strpos($head, "\r\n\r\n", $partStart);
+                    if ($partEnd !== false) {
+                        $partHeaders = substr($head, $partStart, $partEnd - $partStart);
+                        if (preg_match('/filename=["\']?([^"\';\r\n]+)["\']?/i', $partHeaders, $m)) {
+                            return trim($m[1], '"\'');
+                        }
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * form-encoded body. Returns the body unchanged if neither format is detected.
      *
      * @param  array<string, string>  $headers

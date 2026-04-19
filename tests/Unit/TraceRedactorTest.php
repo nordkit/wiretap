@@ -129,9 +129,19 @@ it('gracefully handles empty form data when attempting to redact', function (): 
 it('nulls out multipart/form-data request body', function (): void {
     $entry = makeRedactionPipeline()->redact(makeRedactionEntry([
         'requestHeaders' => ['Content-Type' => 'multipart/form-data; boundary=----FormBoundary'],
-        'requestBody' => '------FormBoundary\r\nContent-Disposition: form-data; name="file"\r\n\r\nbinary data',
+        'requestBody' => '------FormBoundaryContent-Disposition: form-data; name="field"body',
     ]));
-    expect($entry->requestBody)->toBeNull();
+    expect($entry->requestBody)->toStartWith('[binary:');
+});
+
+it('extracts filename from multipart/form-data body', function (): void {
+    $boundary = '----FormBoundary';
+    $body = "--{$boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"photo.jpg\"\r\nContent-Type: image/jpeg\r\n\r\nbinary";
+    $entry = makeRedactionPipeline()->redact(makeRedactionEntry([
+        'requestHeaders' => ['Content-Type' => "multipart/form-data; boundary={$boundary}"],
+        'requestBody' => $body,
+    ]));
+    expect($entry->requestBody)->toBe('[binary: photo.jpg]');
 });
 
 it('nulls out application/octet-stream request body', function (): void {
@@ -139,7 +149,18 @@ it('nulls out application/octet-stream request body', function (): void {
         'requestHeaders' => ['Content-Type' => 'application/octet-stream'],
         'requestBody' => "\x89PNG\r\n\x1a\n binary image data",
     ]));
-    expect($entry->requestBody)->toBeNull();
+    expect($entry->requestBody)->toBe('[binary: application/octet-stream]');
+});
+
+it('extracts filename from Content-Disposition header for octet-stream', function (): void {
+    $entry = makeRedactionPipeline()->redact(makeRedactionEntry([
+        'requestHeaders' => [
+            'Content-Type' => 'application/octet-stream',
+            'Content-Disposition' => 'attachment; filename="report.pdf"',
+        ],
+        'requestBody' => "binary pdf data",
+    ]));
+    expect($entry->requestBody)->toBe('[binary: report.pdf]');
 });
 
 it('nulls out multipart/form-data response body', function (): void {
@@ -147,7 +168,7 @@ it('nulls out multipart/form-data response body', function (): void {
         'responseHeaders' => ['Content-Type' => 'multipart/form-data; boundary=abc'],
         'responseBody' => 'binary response',
     ]));
-    expect($entry->responseBody)->toBeNull();
+    expect($entry->responseBody)->toStartWith('[binary:');
 });
 
 it('nulls out application/octet-stream response body', function (): void {
@@ -155,7 +176,18 @@ it('nulls out application/octet-stream response body', function (): void {
         'responseHeaders' => ['Content-Type' => 'application/octet-stream'],
         'responseBody' => "\x00\x01\x02 binary",
     ]));
-    expect($entry->responseBody)->toBeNull();
+    expect($entry->responseBody)->toBe('[binary: application/octet-stream]');
+});
+
+it('extracts filename from Content-Disposition response header', function (): void {
+    $entry = makeRedactionPipeline()->redact(makeRedactionEntry([
+        'responseHeaders' => [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="invoice.pdf"',
+        ],
+        'responseBody' => '%PDF binary',
+    ]));
+    expect($entry->responseBody)->toBe('[binary: invoice.pdf]');
 });
 
 it('nulls out image/* request body', function (): void {
@@ -163,7 +195,7 @@ it('nulls out image/* request body', function (): void {
         'requestHeaders' => ['Content-Type' => 'image/png'],
         'requestBody' => "\x89PNG\r\n\x1a\n binary image data",
     ]));
-    expect($entry->requestBody)->toBeNull();
+    expect($entry->requestBody)->toBe('[binary: image/png]');
 });
 
 it('nulls out image/* response body', function (): void {
@@ -171,7 +203,7 @@ it('nulls out image/* response body', function (): void {
         'responseHeaders' => ['Content-Type' => 'image/jpeg'],
         'responseBody' => "\xFF\xD8\xFF binary jpeg",
     ]));
-    expect($entry->responseBody)->toBeNull();
+    expect($entry->responseBody)->toBe('[binary: image/jpeg]');
 });
 
 it('nulls out video/* response body', function (): void {
@@ -179,7 +211,7 @@ it('nulls out video/* response body', function (): void {
         'responseHeaders' => ['Content-Type' => 'video/mp4'],
         'responseBody' => "binary mp4 data",
     ]));
-    expect($entry->responseBody)->toBeNull();
+    expect($entry->responseBody)->toBe('[binary: video/mp4]');
 });
 
 it('nulls out audio/* response body', function (): void {
@@ -187,7 +219,7 @@ it('nulls out audio/* response body', function (): void {
         'responseHeaders' => ['Content-Type' => 'audio/mpeg'],
         'responseBody' => "binary mp3 data",
     ]));
-    expect($entry->responseBody)->toBeNull();
+    expect($entry->responseBody)->toBe('[binary: audio/mpeg]');
 });
 
 it('nulls out application/pdf response body', function (): void {
@@ -195,7 +227,7 @@ it('nulls out application/pdf response body', function (): void {
         'responseHeaders' => ['Content-Type' => 'application/pdf'],
         'responseBody' => "%PDF-1.4 binary",
     ]));
-    expect($entry->responseBody)->toBeNull();
+    expect($entry->responseBody)->toBe('[binary: application/pdf]');
 });
 
 it('nulls out application/zip response body', function (): void {
@@ -203,7 +235,7 @@ it('nulls out application/zip response body', function (): void {
         'responseHeaders' => ['Content-Type' => 'application/zip'],
         'responseBody' => "PK binary zip data",
     ]));
-    expect($entry->responseBody)->toBeNull();
+    expect($entry->responseBody)->toBe('[binary: application/zip]');
 });
 
 it('does not null out application/json body', function (): void {
@@ -211,6 +243,6 @@ it('does not null out application/json body', function (): void {
         'requestHeaders' => ['Content-Type' => 'application/json'],
         'requestBody' => '{"foo":"bar"}',
     ]));
-    expect($entry->requestBody)->not->toBeNull();
+    expect($entry->requestBody)->not->toStartWith('[binary:');
 });
 
