@@ -129,8 +129,10 @@ class TraceFilter
     /** @param list<string> $patterns */
     private function pathIsExcluded(string $url, array $patterns): bool
     {
+        $path = $this->extractPath($url);
+
         foreach ($patterns as $pattern) {
-            if (preg_match($pattern, $url) === 1) {
+            if (preg_match($pattern, $path) === 1) {
                 return true;
             }
         }
@@ -145,12 +147,25 @@ class TraceFilter
             return false;
         }
 
+        $path = $this->extractPath($url);
+
         foreach ($patterns as $pattern) {
-            if (preg_match($pattern, $url) === 1) {
+            if (preg_match($pattern, $path) === 1) {
                 return false;
             }
         }
 
         return true;
+    }
+
+    /**
+     * Extracts the path component from a URL for pattern matching.
+     * Falls back to the raw URL string if parsing fails (e.g. malformed URLs).
+     */
+    private function extractPath(string $url): string
+    {
+        $path = parse_url($url, PHP_URL_PATH);
+
+        return is_string($path) ? $path : $url;
     }
 }

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.1] - 2026-04-19
+
+### Fixed
+- `TraceFilter` now matches `include_paths` and `exclude_paths` (both outbound and inbound) against the **path component** of the URL (e.g. `/v2/cart/123456`) instead of the full URL string. Previously, anchored patterns like `#^/v2/cart#` would never match because the stored URL begins with the scheme and host (`https://myapp.com/...`). Patterns are unchanged — existing anchored regexes now work as documented.
+
 ## [2.3.0] - 2026-04-19
 
 ### Added
@@ -138,7 +143,8 @@ php artisan migrate
 - `LoggingMiddleware` for raw Guzzle `HandlerStack` integration.
 - `Wiretap` facade with `log()`, `record()`, and `startTimer()` methods.
 
-[Unreleased]: https://github.com/nordkit/wiretap/compare/v2.3.0...HEAD
+[Unreleased]: https://github.com/nordkit/wiretap/compare/v2.3.1...HEAD
+[2.3.1]: https://github.com/nordkit/wiretap/compare/v2.3.0...v2.3.1
 [2.3.0]: https://github.com/nordkit/wiretap/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/nordkit/wiretap/compare/v2.1.1...v2.2.0
 [2.1.1]: https://github.com/nordkit/wiretap/compare/v2.1.0...v2.1.1

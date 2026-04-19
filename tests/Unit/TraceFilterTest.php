@@ -62,9 +62,38 @@ it('properly drops the path filter config', function (): void {
 });
 
 it('only traces paths matching include_paths', function (): void {
-    $pipeline = makePipeline(['include_paths' => ['#^https://api\.example\.com/orders#']]);
+    $pipeline = makePipeline(['include_paths' => ['#^/orders#']]);
     expect($pipeline->shouldTrace(makeEntry('https://api.example.com/orders')))->toBeTrue();
     expect($pipeline->shouldTrace(makeEntry('https://api.example.com/health')))->toBeFalse();
+});
+
+it('matches anchored exclude_paths pattern against path not full url', function (): void {
+    $pipeline = makePipeline(['exclude_paths' => ['#^/v2/cart#']]);
+    expect($pipeline->shouldTrace(makeEntry('https://myapp.com/v2/cart/123456')))->toBeFalse();
+    expect($pipeline->shouldTrace(makeEntry('https://myapp.com/v2/orders')))->toBeTrue();
+});
+
+it('matches anchored inbound_exclude_paths pattern against path not full url', function (): void {
+    $pipeline = makePipeline(['inbound_exclude_paths' => ['#^/v2/cart#']]);
+
+    $blocked = new HttpExchange(
+        direction: HttpDirection::Inbound, driver: 'laravel-inbound',
+        url: 'https://myapp.com/v2/cart/123456', method: 'GET',
+        requestHeaders: [], requestBody: null, responseStatus: 200,
+        responseHeaders: [], responseBody: null, durationMs: 1,
+    );
+
+    $allowed = new HttpExchange(
+        direction: HttpDirection::Inbound, driver: 'laravel-inbound',
+        url: 'https://myapp.com/v2/orders', method: 'GET',
+        requestHeaders: [], requestBody: null, responseStatus: 200,
+        responseHeaders: [], responseBody: null, durationMs: 1,
+    );
+
+    expect($pipeline->shouldTrace($blocked))->toBeFalse();
+    expect($pipeline->shouldTrace($allowed))->toBeTrue();
+    // Outbound is unaffected by inbound_exclude_paths
+    expect($pipeline->shouldTrace(makeEntry('https://myapp.com/v2/cart/123456')))->toBeTrue();
 });
 
 it('gives precedence to exclude_paths over include_paths', function (): void {

@@ -90,10 +90,10 @@ return [
         'exclude_hosts' => [],
 
         /*
-        | Regex patterns matched against the full outbound URL.
+        | Regex patterns matched against the path component of the outbound URL (e.g. /api/payments).
         | include_paths: empty = trace all paths. Non-empty = only trace matching paths.
         | exclude_paths: always takes priority over include_paths. Matching requests are skipped.
-        | Example: include_paths: ['#^/api/payments#'], exclude_paths: ['#/health#']
+        | Example: include_paths: ['#^/api/payments#'], exclude_paths: ['#^/health#']
         */
         'include_paths' => [],
         'exclude_paths' => [],
@@ -123,7 +123,7 @@ return [
         'exclude_hosts' => [],
 
         /*
-        | Regex patterns matched against the full inbound URL.
+        | Regex patterns matched against the path component of the inbound URL (e.g. /webhooks/stripe).
         | include_paths: empty = trace all paths. Non-empty = only trace matching paths.
         | exclude_paths: always takes priority over include_paths. Matching requests are skipped.
         | Example: include_paths: ['#^/webhooks#'], exclude_paths: ['#^/health#']
