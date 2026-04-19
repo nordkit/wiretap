@@ -3,12 +3,12 @@
 declare(strict_types=1);
 
 use Nordkit\Wiretap\HttpDirection;
-use Nordkit\Wiretap\HttpLogEntry;
-use Nordkit\Wiretap\HttpLogFilter;
+use Nordkit\Wiretap\HttpExchange;
+use Nordkit\Wiretap\Pipeline\TraceFilter;
 
-function makeEntry(string $url): HttpLogEntry
+function makeEntry(string $url): HttpExchange
 {
-    return new HttpLogEntry(
+    return new HttpExchange(
         direction      : HttpDirection::Outbound,
         driver         : 'laravel-http',
         url            : $url,
@@ -22,9 +22,9 @@ function makeEntry(string $url): HttpLogEntry
     );
 }
 
-function makePipeline(array $overrides = []): HttpLogFilter
+function makePipeline(array $overrides = []): TraceFilter
 {
-    return new HttpLogFilter(array_merge([
+    return new TraceFilter(array_merge([
         'enabled' => true,
         'include_hosts' => [],
         'exclude_hosts' => [],
@@ -34,7 +34,7 @@ function makePipeline(array $overrides = []): HttpLogFilter
 
 it('evaluates filter configurations correctly', function (array $config, string $url, bool $expected): void {
     $pipeline = makePipeline($config);
-    expect($pipeline->shouldLog(makeEntry($url)))->toBe($expected);
+    expect($pipeline->shouldTrace(makeEntry($url)))->toBe($expected);
 })->with([
     'enabled and no filters' => [['enabled' => true], 'https://api.example.com/orders', true],
     'disabled' => [['enabled' => false], 'https://api.example.com/orders', false],
@@ -52,8 +52,8 @@ it('evaluates filter configurations correctly', function (array $config, string 
 
 it('properly drops the path filter config', function (): void {
     $pipeline = makePipeline(['enabled' => true, 'exclude_paths' => ['#/health#']]);
-    expect($pipeline->shouldLog(makeEntry('https://api.example.com/health')))->toBe(false);
-    expect($pipeline->shouldLog(makeEntry('https://api.example.com/orders')))->toBe(true);
+    expect($pipeline->shouldTrace(makeEntry('https://api.example.com/health')))->toBe(false);
+    expect($pipeline->shouldTrace(makeEntry('https://api.example.com/orders')))->toBe(true);
 });
 
 it('throws InvalidArgumentException for an invalid exclude_paths regex', function (): void {

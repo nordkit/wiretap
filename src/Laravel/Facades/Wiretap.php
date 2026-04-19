@@ -7,9 +7,9 @@ namespace Nordkit\Wiretap\Laravel\Facades;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @method static void record(\Nordkit\Wiretap\HttpLogEntry $entry)
+ * @method static void capture(\Nordkit\Wiretap\HttpExchange $entry)
  * @method static \Closure start()
- * @method static void log(\Nordkit\Wiretap\HttpDirection $direction, string $driver, string $url, string $method, array $requestHeaders, ?string $requestBody, ?int $responseStatus, array $responseHeaders, ?string $responseBody, ?\Closure $timer = null, ?string $errorMessage = null, ?object $loggable = null)
+ * @method static void trace(\Nordkit\Wiretap\HttpDirection $direction, string $driver, string $url, string $method, array $requestHeaders, ?string $requestBody, ?int $responseStatus, array $responseHeaders, ?string $responseBody, ?\Closure $timer = null, ?string $errorMessage = null, ?object $traceable = null)
  *
  * @see \Nordkit\Wiretap\Wiretap
  */

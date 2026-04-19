@@ -8,7 +8,7 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Events\ConnectionFailed;
 use Illuminate\Http\Client\Request as LaravelHttpRequest;
 use Illuminate\Support\Facades\Http;
-use Nordkit\Wiretap\Laravel\Models\HttpLog;
+use Nordkit\Wiretap\Laravel\Models\Trace;
 
 uses(RefreshDatabase::class);
 
@@ -22,7 +22,7 @@ it('integrates with Laravel Http Client and logs outbound requests', function ()
 
     expect($response->successful())->toBeTrue();
 
-    $log = HttpLog::query()->first();
+    $log = Trace::query()->first();
     $lowerReqHeaders = array_change_key_case($log->request_headers, CASE_LOWER);
     $lowerResHeaders = array_change_key_case($log->response_headers, CASE_LOWER);
 
@@ -48,7 +48,7 @@ it('gracefully handles and logs failed HTTP connections', function (): void {
 
     event(new ConnectionFailed($request, $exception));
 
-    $log = HttpLog::query()->first();
+    $log = Trace::query()->first();
 
     expect($log)->not->toBeNull()
         ->and($log->url)->toBe('https://fake-unresolved-domain.example.com')

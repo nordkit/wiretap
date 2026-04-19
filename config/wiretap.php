@@ -6,7 +6,7 @@ return [
     | Enable / disable the logger globally
     |--------------------------------------------------------------------------
     */
-    'enabled' => env('HTTP_LOGGER_ENABLED', true),
+    'enabled' => env('WIRETAP_ENABLED', true),
 
     /*
     |--------------------------------------------------------------------------
@@ -16,23 +16,23 @@ return [
     | report() handler (e.g. Sentry, Bugsnag, the log). Disabled by default so
     | logging failures never surface to the caller in production.
     */
-    'debug' => env('HTTP_LOGGER_DEBUG', false),
+    'debug' => env('WIRETAP_DEBUG', false),
 
     /*
     |--------------------------------------------------------------------------
     | Database table name
     |--------------------------------------------------------------------------
     */
-    'table_name' => 'http_logs',
+    'table_name' => 'traces',
 
     /*
     |--------------------------------------------------------------------------
     | Eloquent model
     |--------------------------------------------------------------------------
-    | Override to use a custom HttpLog model (e.g. to add casts, scopes, or a
+    | Override to use a custom Trace model (e.g. to add casts, scopes, or a
     | different table name).
     */
-    'model' => 'Nordkit\Wiretap\Laravel\Models\HttpLog',
+    'model' => 'Nordkit\Wiretap\Laravel\Models\Trace',
 
     /*
     |--------------------------------------------------------------------------
@@ -41,7 +41,7 @@ return [
     | Supported: 'database', 'log'.
     | Any other value will throw an InvalidArgumentException at boot time.
     */
-    'driver' => env('HTTP_LOGGER_DRIVER', 'database'),
+    'driver' => env('WIRETAP_DRIVER', 'database'),
 
     /*
     |--------------------------------------------------------------------------
@@ -50,7 +50,7 @@ return [
     | If using the 'log' driver, optionally specify which logging channel to use.
     | Leave null to use the application's default log channel.
     */
-    'log_channel' => env('HTTP_LOGGER_CHANNEL', null),
+    'log_channel' => env('WIRETAP_LOG_CHANNEL', null),
 
     /*
     |--------------------------------------------------------------------------
@@ -59,25 +59,25 @@ return [
     | Set enabled = false to write logs synchronously (not recommended in prod).
     */
     'queue' => [
-        'enabled' => env('HTTP_LOGGER_QUEUE_ENABLED', true),
-        'connection' => env('HTTP_LOGGER_QUEUE_CONNECTION', null), // null = app default
-        'name' => env('HTTP_LOGGER_QUEUE', 'logging'),
+        'enabled' => env('WIRETAP_QUEUE_ENABLED', true),
+        'connection' => env('WIRETAP_QUEUE_CONNECTION', null), // null = app default
+        'name' => env('WIRETAP_QUEUE', 'logging'),
     ],
 
     /*
     |--------------------------------------------------------------------------
     | Outbound adapters
     |--------------------------------------------------------------------------
-    | laravel_http: auto-listen to Laravel Http:: client events (HTTP_LOGGER_LARAVEL_HTTP).
+    | laravel_http: auto-listen to Laravel Http:: client events (WIRETAP_LARAVEL_HTTP).
     | guzzle:       when true, binds WiretapGuzzleClient as a singleton in the
     |               container. Inject WiretapGuzzleClient via the constructor
     |               or resolve it with app(WiretapGuzzleClient::class).
     |               Set to false to manage the HandlerStack manually instead.
-    |               (HTTP_LOGGER_GUZZLE)
+    |               (WIRETAP_GUZZLE)
     */
     'outbound' => [
-        'laravel_http' => env('HTTP_LOGGER_LARAVEL_HTTP', true),
-        'guzzle' => env('HTTP_LOGGER_GUZZLE', true),
+        'laravel_http' => env('WIRETAP_LARAVEL_HTTP', true),
+        'guzzle' => env('WIRETAP_GUZZLE', true),
     ],
 
     /*
@@ -85,9 +85,9 @@ return [
     | Body capture
     |--------------------------------------------------------------------------
     */
-    'log_request_body' => env('HTTP_LOGGER_LOG_REQUEST_BODY', true),
-    'log_response_body' => env('HTTP_LOGGER_LOG_RESPONSE_BODY', true),
-    'max_body_bytes' => env('HTTP_LOGGER_MAX_BODY_BYTES', 65_536), // 64 KB; null = unlimited
+    'store_request_body' => env('WIRETAP_STORE_REQUEST_BODY', true),
+    'store_response_body' => env('WIRETAP_STORE_RESPONSE_BODY', true),
+    'max_body_bytes' => env('WIRETAP_MAX_BODY_BYTES', 65_536), // 64 KB; null = unlimited
 
     /*
     |--------------------------------------------------------------------------

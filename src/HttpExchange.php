@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Nordkit\Wiretap;
 
 /**
- * Immutable value object representing a single HTTP log event.
+ * Immutable value object representing a single HTTP exchange event.
  *
  * @property-read HttpDirection $direction
  * @property-read string $driver
@@ -18,9 +18,9 @@ namespace Nordkit\Wiretap;
  * @property-read string|null $responseBody
  * @property-read int $durationMs
  * @property-read string|null $errorMessage
- * @property-read object|null $loggable
+ * @property-read object|null $traceable
  */
-final readonly class HttpLogEntry
+final readonly class HttpExchange
 {
     /**
      * @param  array<string, string|list<string>>  $requestHeaders
@@ -38,6 +38,6 @@ final readonly class HttpLogEntry
         public ?string $responseBody,
         public int $durationMs,
         public ?string $errorMessage = null,
-        public ?object $loggable = null,
+        public ?object $traceable = null,
     ) {}
 }

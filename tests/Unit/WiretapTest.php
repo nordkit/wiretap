@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-use Nordkit\Wiretap\Contracts\HttpLogWriter;
+use Nordkit\Wiretap\Contracts\TraceWriter;
 use Nordkit\Wiretap\HttpDirection;
-use Nordkit\Wiretap\HttpLogEntry;
-use Nordkit\Wiretap\HttpLogFilter;
-use Nordkit\Wiretap\HttpLogRedactor;
+use Nordkit\Wiretap\HttpExchange;
+use Nordkit\Wiretap\Pipeline\TraceFilter;
+use Nordkit\Wiretap\Pipeline\TraceRedactor;
 use Nordkit\Wiretap\Wiretap;
 
 function makeThrowingWiretap(): array
 {
-    $writer = new class implements HttpLogWriter
+    $writer = new class implements TraceWriter
     {
         public bool $called = false;
 
-        public function write(HttpLogEntry $entry): void
+        public function write(HttpExchange $entry): void
         {
             $this->called = true;
             throw new RuntimeException('Intentional exception inside logging pipeline');
@@ -24,9 +24,9 @@ function makeThrowingWiretap(): array
 
     $wiretap = new Wiretap(
         $writer,
-        new HttpLogFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'exclude_paths' => []]),
-        new HttpLogRedactor([
-            'log_request_body' => true, 'log_response_body' => true, 'max_body_bytes' => null,
+        new TraceFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'exclude_paths' => []]),
+        new TraceRedactor([
+            'store_request_body' => true, 'store_response_body' => true, 'max_body_bytes' => null,
             'redact_request_headers' => [], 'redact_response_headers' => [], 'redact_body_keys' => [],
             'redact_string' => '[REDACTED]',
         ]),
@@ -35,30 +35,30 @@ function makeThrowingWiretap(): array
     return [$wiretap, $writer];
 }
 
-function makeValidEntry(): HttpLogEntry
+function makeValidEntry(): HttpExchange
 {
-    return new HttpLogEntry(
+    return new HttpExchange(
         direction: HttpDirection::Outbound, driver: 'test', url: 'https://example.com',
         method: 'GET', requestHeaders: [], requestBody: null, responseStatus: 200,
         responseHeaders: [], responseBody: null, durationMs: 10
     );
 }
 
-it('swallows exceptions in record()', function (): void {
+it('swallows exceptions in capture()', function (): void {
     [$wiretap, $writer] = makeThrowingWiretap();
 
     // If it doesn't swallow, this would throw and fail the test
-    expect(fn () => $wiretap->record(makeValidEntry()))->not->toThrow(RuntimeException::class);
+    expect(fn () => $wiretap->capture(makeValidEntry()))->not->toThrow(RuntimeException::class);
 
     // Verify it was actually called
     expect($writer->called)->toBeTrue();
 });
 
-it('swallows exceptions in log()', function (): void {
+it('swallows exceptions in trace()', function (): void {
     [$wiretap, $writer] = makeThrowingWiretap();
 
     // If it doesn't swallow, this would throw and fail the test
-    expect(fn () => $wiretap->log(
+    expect(fn () => $wiretap->trace(
         direction: HttpDirection::Outbound,
         driver: 'test',
         url: 'https://example.com',
@@ -74,12 +74,12 @@ it('swallows exceptions in log()', function (): void {
     expect($writer->called)->toBeTrue();
 });
 
-it('accurately tracks duration with start() and stopTimer() implicitly via log()', function (): void {
-    $writer = new class implements HttpLogWriter
+it('accurately tracks duration with start() and stopTimer() implicitly via trace()', function (): void {
+    $writer = new class implements TraceWriter
     {
-        public ?HttpLogEntry $entry = null;
+        public ?HttpExchange $entry = null;
 
-        public function write(HttpLogEntry $entry): void
+        public function write(HttpExchange $entry): void
         {
             $this->entry = $entry;
         }
@@ -87,9 +87,9 @@ it('accurately tracks duration with start() and stopTimer() implicitly via log()
 
     $wiretap = new Wiretap(
         $writer,
-        new HttpLogFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'exclude_paths' => []]),
-        new HttpLogRedactor([
-            'log_request_body' => true, 'log_response_body' => true, 'max_body_bytes' => null,
+        new TraceFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'exclude_paths' => []]),
+        new TraceRedactor([
+            'store_request_body' => true, 'store_response_body' => true, 'max_body_bytes' => null,
             'redact_request_headers' => [], 'redact_response_headers' => [], 'redact_body_keys' => [],
             'redact_string' => '[REDACTED]',
         ]),
@@ -100,7 +100,7 @@ it('accurately tracks duration with start() and stopTimer() implicitly via log()
     // Simulate some work... sleep for 10ms
     usleep(10000);
 
-    $wiretap->log(
+    $wiretap->trace(
         direction: HttpDirection::Outbound,
         driver: 'test',
         url: 'https://example.com',
@@ -117,12 +117,12 @@ it('accurately tracks duration with start() and stopTimer() implicitly via log()
         ->and($writer->entry->durationMs)->toBeGreaterThanOrEqual(10);
 });
 
-it('defaults durationMs to 0 when no timer is passed to log()', function (): void {
-    $writer = new class implements HttpLogWriter
+it('defaults durationMs to 0 when no timer is passed to trace()', function (): void {
+    $writer = new class implements TraceWriter
     {
-        public ?HttpLogEntry $entry = null;
+        public ?HttpExchange $entry = null;
 
-        public function write(HttpLogEntry $entry): void
+        public function write(HttpExchange $entry): void
         {
             $this->entry = $entry;
         }
@@ -130,15 +130,15 @@ it('defaults durationMs to 0 when no timer is passed to log()', function (): voi
 
     $wiretap = new Wiretap(
         $writer,
-        new HttpLogFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'exclude_paths' => []]),
-        new HttpLogRedactor([
-            'log_request_body' => true, 'log_response_body' => true, 'max_body_bytes' => null,
+        new TraceFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'exclude_paths' => []]),
+        new TraceRedactor([
+            'store_request_body' => true, 'store_response_body' => true, 'max_body_bytes' => null,
             'redact_request_headers' => [], 'redact_response_headers' => [], 'redact_body_keys' => [],
             'redact_string' => '[REDACTED]',
         ]),
     );
 
-    $wiretap->log(
+    $wiretap->trace(
         direction: HttpDirection::Outbound,
         driver: 'test',
         url: 'https://example.com',
@@ -157,13 +157,13 @@ it('defaults durationMs to 0 when no timer is passed to log()', function (): voi
 
 it('start() returns a Closure that yields a positive integer', function (): void {
     $wiretap = new Wiretap(
-        new class implements HttpLogWriter
+        new class implements TraceWriter
         {
-            public function write(HttpLogEntry $entry): void {}
+            public function write(HttpExchange $entry): void {}
         },
-        new HttpLogFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'exclude_paths' => []]),
-        new HttpLogRedactor([
-            'log_request_body' => true, 'log_response_body' => true, 'max_body_bytes' => null,
+        new TraceFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'exclude_paths' => []]),
+        new TraceRedactor([
+            'store_request_body' => true, 'store_response_body' => true, 'max_body_bytes' => null,
             'redact_request_headers' => [], 'redact_response_headers' => [], 'redact_body_keys' => [],
             'redact_string' => '[REDACTED]',
         ]),

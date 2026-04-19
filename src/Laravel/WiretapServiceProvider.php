@@ -10,14 +10,14 @@ use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\ServiceProvider;
-use Nordkit\Wiretap\Contracts\HttpLogWriter;
+use Nordkit\Wiretap\Contracts\TraceWriter;
 use Nordkit\Wiretap\Guzzle\WiretapClient;
-use Nordkit\Wiretap\HttpLogFilter;
-use Nordkit\Wiretap\HttpLogRedactor;
+use Nordkit\Wiretap\Pipeline\TraceFilter;
+use Nordkit\Wiretap\Pipeline\TraceRedactor;
 use Nordkit\Wiretap\Laravel\Listeners\RecordFailedConnection;
 use Nordkit\Wiretap\Laravel\Listeners\RecordOutboundRequest;
-use Nordkit\Wiretap\Laravel\Models\HttpLog;
-use Nordkit\Wiretap\Laravel\Writers\EloquentWriter;
+use Nordkit\Wiretap\Laravel\Models\Trace;
+use Nordkit\Wiretap\Laravel\Writers\DatabaseWriter;
 use Nordkit\Wiretap\Laravel\Writers\LogWriter;
 use Nordkit\Wiretap\Wiretap;
 
@@ -27,13 +27,13 @@ class WiretapServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__.'/../../config/wiretap.php', 'wiretap');
 
-        $this->app->afterResolving(HttpLog::class, function (HttpLog $model): void {
-            $model->setTable($this->app['config']->get('wiretap.table_name', 'http_logs'));
+        $this->app->afterResolving(Trace::class, function (Trace $model): void {
+            $model->setTable($this->app['config']->get('wiretap.table_name', 'traces'));
         });
 
-        $this->app->singleton(LoggableScope::class);
+        $this->app->singleton(TraceableScope::class);
 
-        $this->app->singleton(HttpLogWriter::class, function ($app): HttpLogWriter {
+        $this->app->singleton(TraceWriter::class, function ($app): TraceWriter {
             $config = $app['config']['wiretap'];
             $driver = (string) ($config['driver'] ?? 'database');
 
@@ -47,7 +47,7 @@ class WiretapServiceProvider extends ServiceProvider
                 $queueConfig = (array) ($config['queue'] ?? []);
                 $connection = $queueConfig['connection'] ?? null;
 
-                return new EloquentWriter([
+                return new DatabaseWriter([
                     'enabled' => (bool) ($queueConfig['enabled'] ?? true),
                     'connection' => isset($connection) ? (string) $connection : null,
                     'name' => (string) ($queueConfig['name'] ?? 'logging'),
@@ -59,10 +59,10 @@ class WiretapServiceProvider extends ServiceProvider
             );
         });
 
-        $this->app->singleton(HttpLogFilter::class, function ($app): HttpLogFilter {
+        $this->app->singleton(TraceFilter::class, function ($app): TraceFilter {
             $config = $app['config']['wiretap'];
 
-            return new HttpLogFilter([
+            return new TraceFilter([
                 'enabled' => (bool) $config['enabled'],
                 'include_hosts' => (array) $config['include_hosts'],
                 'exclude_hosts' => (array) $config['exclude_hosts'],
@@ -70,13 +70,13 @@ class WiretapServiceProvider extends ServiceProvider
             ]);
         });
 
-        $this->app->singleton(HttpLogRedactor::class, function ($app): HttpLogRedactor {
+        $this->app->singleton(TraceRedactor::class, function ($app): TraceRedactor {
             $config = $app['config']['wiretap'];
 
-            return new HttpLogRedactor([
+            return new TraceRedactor([
                 'redact_string' => (string) ($config['redact_string'] ?? '[REDACTED]'),
-                'log_request_body' => (bool) $config['log_request_body'],
-                'log_response_body' => (bool) $config['log_response_body'],
+                'store_request_body' => (bool) $config['store_request_body'],
+                'store_response_body' => (bool) $config['store_response_body'],
                 'max_body_bytes' => (int) $config['max_body_bytes'],
                 'redact_request_headers' => (array) $config['redact_request_headers'],
                 'redact_response_headers' => (array) $config['redact_response_headers'],
@@ -106,9 +106,9 @@ class WiretapServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(__DIR__.'/../../database/migrations');
 
         if ($this->app['config']['wiretap.outbound.laravel_http']) {
-            Http::macro('withLoggable', function (object $loggable): PendingRequest {
+            Http::macro('withTraceable', function (object $traceable): PendingRequest {
                 /** @var PendingRequest $this */
-                app(LoggableScope::class)->push($loggable);
+                app(TraceableScope::class)->push($traceable);
 
                 return $this;
             });

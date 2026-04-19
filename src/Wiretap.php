@@ -5,20 +5,22 @@ declare(strict_types=1);
 namespace Nordkit\Wiretap;
 
 use Closure;
-use Nordkit\Wiretap\Contracts\HttpLogWriter;
+use Nordkit\Wiretap\Contracts\TraceWriter;
+use Nordkit\Wiretap\Pipeline\TraceFilter;
+use Nordkit\Wiretap\Pipeline\TraceRedactor;
 use Throwable;
 
 /**
  * Main entry-point for the Wiretap package.
- * End users call log() to manually record a request using raw parameters.
- * Internally, listeners and middleware call record() with a pre-built HttpLogEntry.
+ * End users call trace() to manually capture a request using raw parameters.
+ * Internally, listeners and middleware call capture() with a pre-built HttpExchange.
  */
 class Wiretap
 {
     public function __construct(
-        private readonly HttpLogWriter $writer,
-        private readonly HttpLogFilter $filter,
-        private readonly HttpLogRedactor $redaction,
+        private readonly TraceWriter $writer,
+        private readonly TraceFilter $filter,
+        private readonly TraceRedactor $redaction,
     ) {}
 
     /**
@@ -34,19 +36,19 @@ class Wiretap
     }
 
     /**
-     * Convenience method for manually logging a request from raw parameters.
-     * Builds an HttpLogEntry and delegates to record().
+     * Convenience method for manually tracing a request from raw parameters.
+     * Builds an HttpExchange and delegates to capture().
      *
-     * Use this when logging requests made outside of Laravel's HTTP Client or Guzzle
+     * Use this when tracing requests made outside of Laravel's HTTP Client or Guzzle
      * (e.g. raw cURL, custom SDKs). All exceptions are swallowed so this call
      * will never halt application execution.
      *
      * @param  array<string, string|list<string>>  $requestHeaders
      * @param  array<string, string|list<string>>  $responseHeaders
      *
-     * @throws Throwable If debug mode is enabled and an exception occurs during logging
+     * @throws Throwable If debug mode is enabled and an exception occurs during tracing
      */
-    public function log(
+    public function trace(
         HttpDirection $direction,
         string $driver,
         string $url,
@@ -58,12 +60,12 @@ class Wiretap
         ?string $responseBody,
         ?Closure $timer = null,
         ?string $errorMessage = null,
-        ?object $loggable = null,
+        ?object $traceable = null,
     ): void {
         try {
             $durationMs = $timer !== null ? $timer() : 0;
 
-            $entry = new HttpLogEntry(
+            $entry = new HttpExchange(
                 direction: $direction,
                 driver: $driver,
                 url: $url,
@@ -75,10 +77,10 @@ class Wiretap
                 responseBody: $responseBody,
                 durationMs: $durationMs,
                 errorMessage: $errorMessage,
-                loggable: $loggable,
+                traceable: $traceable,
             );
 
-            $this->record($entry);
+            $this->capture($entry);
         } catch (Throwable $e) {
             if (config('wiretap.debug', false)) {
                 report($e);
@@ -87,18 +89,18 @@ class Wiretap
     }
 
     /**
-     * Evaluate, redact, and persist a pre-built HttpLogEntry.
+     * Evaluate, redact, and persist a pre-built HttpExchange.
      *
      * Called internally by listeners and middleware. Use this directly when you need
-     * full control over the HttpLogEntry (e.g. concurrent requests via Http::pool()).
-     * All exceptions are swallowed so recording never masks real application failures.
+     * full control over the HttpExchange (e.g. concurrent requests via Http::pool()).
+     * All exceptions are swallowed so capture never masks real application failures.
      *
-     * @throws Throwable If debug mode is enabled and an exception occurs during recording
+     * @throws Throwable If debug mode is enabled and an exception occurs during capture
      */
-    public function record(HttpLogEntry $entry): void
+    public function capture(HttpExchange $entry): void
     {
         try {
-            if (! $this->filter->shouldLog($entry)) {
+            if (! $this->filter->shouldTrace($entry)) {
                 return;
             }
 

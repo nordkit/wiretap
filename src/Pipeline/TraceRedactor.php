@@ -2,25 +2,27 @@
 
 declare(strict_types=1);
 
-namespace Nordkit\Wiretap;
+namespace Nordkit\Wiretap\Pipeline;
+
+use Nordkit\Wiretap\HttpExchange;
 
 /**
- * Redacts sensitive data from an HttpLogEntry before it is persisted.
+ * Redacts sensitive data from an HttpExchange before it is persisted.
  *
  * Steps applied in order:
  *  1. Strip / replace matching request and response headers with "[REDACTED]".
  *  2. Recursively replace matching JSON or form-encoded body keys with "[REDACTED]".
  *  3. Truncate bodies that exceed max_body_bytes.
- *  4. Null out bodies if log_request_body / log_response_body is false.
+ *  4. Null out bodies if store_request_body / store_response_body is false.
  */
-class HttpLogRedactor
+class TraceRedactor
 {
     /**
      * @param array{
      *     redact_string: string,
-     *     log_request_body: bool,
-     *     log_response_body: bool,
-     *     max_body_bytes: int,
+     *     store_request_body: bool,
+     *     store_response_body: bool,
+     *     max_body_bytes: int|null,
      *     redact_request_headers: list<string>,
      *     redact_response_headers: list<string>,
      *     redact_body_keys: list<string>,
@@ -31,21 +33,21 @@ class HttpLogRedactor
     /**
      * Apply all redaction and truncation rules to a log entry, returning a new sanitised instance.
      */
-    public function redact(HttpLogEntry $entry): HttpLogEntry
+    public function redact(HttpExchange $entry): HttpExchange
     {
-        return new HttpLogEntry(
+        return new HttpExchange(
             direction      : $entry->direction,
             driver         : $entry->driver,
             url            : $entry->url,
             method         : $entry->method,
             requestHeaders : $this->redactHeaders($entry->requestHeaders, $this->config['redact_request_headers']),
-            requestBody    : $this->processBody($entry->requestBody, $this->config['log_request_body'], $entry->requestHeaders),
+            requestBody    : $this->processBody($entry->requestBody, $this->config['store_request_body'], $entry->requestHeaders),
             responseStatus : $entry->responseStatus,
             responseHeaders: $this->redactHeaders($entry->responseHeaders, $this->config['redact_response_headers']),
-            responseBody   : $this->processBody($entry->responseBody, $this->config['log_response_body'], $entry->responseHeaders),
+            responseBody   : $this->processBody($entry->responseBody, $this->config['store_response_body'], $entry->responseHeaders),
             durationMs     : $entry->durationMs,
             errorMessage   : $entry->errorMessage,
-            loggable       : $entry->loggable,
+            traceable      : $entry->traceable,
         );
     }
 
@@ -74,9 +76,9 @@ class HttpLogRedactor
      *
      * @param  array<string, string>  $headers
      */
-    private function processBody(?string $body, bool $shouldLog, array $headers): ?string
+    private function processBody(?string $body, bool $shouldTrace, array $headers): ?string
     {
-        if (! $shouldLog || $body === null) {
+        if (! $shouldTrace || $body === null) {
             return null;
         }
 

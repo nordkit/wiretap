@@ -5,25 +5,25 @@ declare(strict_types=1);
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
-use Nordkit\Wiretap\Contracts\HttpLogWriter;
+use Nordkit\Wiretap\Contracts\TraceWriter;
 use Nordkit\Wiretap\HttpDirection;
-use Nordkit\Wiretap\HttpLogEntry;
-use Nordkit\Wiretap\Laravel\Jobs\WriteHttpLogJob;
-use Nordkit\Wiretap\Laravel\Models\HttpLog;
+use Nordkit\Wiretap\HttpExchange;
+use Nordkit\Wiretap\Laravel\Jobs\WriteTraceJob;
+use Nordkit\Wiretap\Laravel\Models\Trace;
 
 uses(RefreshDatabase::class);
 
 /**
- * Helper: run a WriteHttpLogJob synchronously via the container
- * so Laravel's method injection resolves HttpLog correctly.
+ * Helper: run a WriteTraceJob synchronously via the container
+ * so Laravel's method injection resolves Trace correctly.
  */
-function dispatchJobSync(WriteHttpLogJob $job): void
+function dispatchJobSync(WriteTraceJob $job): void
 {
     app()->call([$job, 'handle']);
 }
 
-it('writes an http log entry to the database', function (): void {
-    $entry = new HttpLogEntry(
+it('writes an trace entry to the database', function (): void {
+    $entry = new HttpExchange(
         direction      : HttpDirection::Outbound,
         driver         : 'test',
         url            : 'https://api.example.com/orders',
@@ -36,21 +36,21 @@ it('writes an http log entry to the database', function (): void {
         durationMs     : 42,
     );
 
-    dispatchJobSync(new WriteHttpLogJob($entry));
+    dispatchJobSync(new WriteTraceJob($entry));
 
-    $log = HttpLog::query()->first();
+    $log = Trace::query()->first();
 
     expect($log)->not->toBeNull()
         ->and($log->url)->toBe('https://api.example.com/orders')
         ->and($log->method)->toBe('POST')
         ->and($log->response_status)->toBe(201)
         ->and($log->duration_ms)->toBe(42)
-        ->and($log->loggable_type)->toBeNull()
-        ->and($log->loggable_id)->toBeNull();
+        ->and($log->traceable_type)->toBeNull()
+        ->and($log->traceable_id)->toBeNull();
 });
 
-it('writes loggable morph columns when entry has a loggable model', function (): void {
-    $loggable = new class extends Model
+it('writes traceable morph columns when entry has a traceable model', function (): void {
+    $traceable = new class extends Model
     {
         protected $table = 'users';
 
@@ -65,7 +65,7 @@ it('writes loggable morph columns when entry has a loggable model', function ():
         }
     };
 
-    $entry = new HttpLogEntry(
+    $entry = new HttpExchange(
         direction      : HttpDirection::Outbound,
         driver         : 'test',
         url            : 'https://api.example.com/sync',
@@ -76,55 +76,55 @@ it('writes loggable morph columns when entry has a loggable model', function ():
         responseHeaders: [],
         responseBody   : null,
         durationMs     : 10,
-        loggable       : $loggable,
+        traceable       : $traceable,
     );
 
-    dispatchJobSync(new WriteHttpLogJob($entry, $loggable->getMorphClass(), (string) $loggable->getKey()));
+    dispatchJobSync(new WriteTraceJob($entry, $traceable->getMorphClass(), (string) $traceable->getKey()));
 
-    $log = HttpLog::query()->first();
+    $log = Trace::query()->first();
 
-    expect($log->loggable_type)->toBe('order')
-        ->and($log->loggable_id)->toBe('01HXYZ1234567890ABCDEFGHIJ');
+    expect($log->traceable_type)->toBe('order')
+        ->and($log->traceable_id)->toBe('01HXYZ1234567890ABCDEFGHIJ');
 });
 
 it('dispatches a queued job when queue is enabled', function (): void {
     Queue::fake();
     config(['wiretap.queue.enabled' => true]);
 
-    $writer = $this->app->make(HttpLogWriter::class);
+    $writer = $this->app->make(TraceWriter::class);
 
-    $writer->write(new HttpLogEntry(
+    $writer->write(new HttpExchange(
         direction: HttpDirection::Outbound, driver: 'test', url: 'https://api.example.com',
         method: 'GET', requestHeaders: [], requestBody: null, responseStatus: 200,
         responseHeaders: [], responseBody: null, durationMs: 5,
     ));
 
-    Queue::assertPushed(WriteHttpLogJob::class);
+    Queue::assertPushed(WriteTraceJob::class);
 });
 
 it('writes synchronously when queue is disabled', function (): void {
     config(['wiretap.queue.enabled' => false]);
 
     // Re-resolve the writer so it picks up the new config
-    $this->app->forgetInstance(HttpLogWriter::class);
-    $writer = $this->app->make(HttpLogWriter::class);
+    $this->app->forgetInstance(TraceWriter::class);
+    $writer = $this->app->make(TraceWriter::class);
 
-    $writer->write(new HttpLogEntry(
+    $writer->write(new HttpExchange(
         direction: HttpDirection::Outbound, driver: 'test', url: 'https://sync.example.com',
         method: 'GET', requestHeaders: [], requestBody: null, responseStatus: 200,
         responseHeaders: [], responseBody: null, durationMs: 3,
     ));
 
-    expect(HttpLog::query()->where('url', 'https://sync.example.com')->exists())->toBeTrue();
+    expect(Trace::query()->where('url', 'https://sync.example.com')->exists())->toBeTrue();
 });
 
-it('resolves and extracts loggable morph keys before dispatching the job', function (): void {
+it('resolves and extracts traceable morph keys before dispatching the job', function (): void {
     Queue::fake();
     config(['wiretap.queue.enabled' => true]);
 
-    $writer = $this->app->make(HttpLogWriter::class);
+    $writer = $this->app->make(TraceWriter::class);
 
-    $loggable = new class extends Model
+    $traceable = new class extends Model
     {
         public function getMorphClass(): string
         {
@@ -137,13 +137,13 @@ it('resolves and extracts loggable morph keys before dispatching the job', funct
         }
     };
 
-    $writer->write(new HttpLogEntry(
+    $writer->write(new HttpExchange(
         direction: HttpDirection::Outbound, driver: 'test', url: 'https://api.example.com',
         method: 'GET', requestHeaders: [], requestBody: null, responseStatus: 200,
-        responseHeaders: [], responseBody: null, durationMs: 5, loggable: $loggable
+        responseHeaders: [], responseBody: null, durationMs: 5, traceable: $traceable
     ));
 
-    Queue::assertPushed(WriteHttpLogJob::class, function (WriteHttpLogJob $job): bool {
-        return $job->loggableType === 'dummy_model' && $job->loggableId === '12345';
+    Queue::assertPushed(WriteTraceJob::class, function (WriteTraceJob $job): bool {
+        return $job->traceableType === 'dummy_model' && $job->traceableId === '12345';
     });
 });
