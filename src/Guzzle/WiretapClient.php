@@ -13,10 +13,10 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\UriInterface;
 
 /**
- * A pre-wired Guzzle client that automatically logs all requests via LoggingMiddleware.
+ * A pre-wired Guzzle client that automatically logs all requests via WiretapMiddleware.
  *
  * Usage (injected via the container):
- *   public function __construct(private readonly LoggingClient $http) {}
+ *   public function __construct(private readonly WiretapClient $http) {}
  *
  * Attach a loggable model for polymorphic association:
  *   $this->http->withLoggable($order)->post('https://api.example.com/sync', [...]);
@@ -24,7 +24,7 @@ use Psr\Http\Message\UriInterface;
  * Note: withLoggable() is designed for sequential requests. It is consumed (reset to null)
  * after the next request is dispatched, matching the behavior of Http::withLoggable().
  */
-class LoggingClient
+class WiretapClient
 {
     private ?object $loggable = null;
 
@@ -39,7 +39,7 @@ class LoggingClient
             ? $config['handler']
             : HandlerStack::create($config['handler'] ?? null);
 
-        $stack->push(LoggingMiddleware::make($this->wiretap, fn (): ?object => $this->consumeLoggable()));
+        $stack->push(WiretapMiddleware::make($this->wiretap, fn (): ?object => $this->consumeLoggable()));
 
         $this->client = new Client(array_merge($config, ['handler' => $stack]));
     }

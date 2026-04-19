@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\ServiceProvider;
 use Nordkit\Wiretap\Contracts\HttpLogWriter;
-use Nordkit\Wiretap\Guzzle\LoggingClient;
+use Nordkit\Wiretap\Guzzle\WiretapClient;
 use Nordkit\Wiretap\HttpLogFilter;
 use Nordkit\Wiretap\HttpLogRedactor;
 use Nordkit\Wiretap\Laravel\Listeners\RecordFailedConnection;
@@ -86,8 +86,8 @@ class WiretapServiceProvider extends ServiceProvider
 
         $this->app->singleton(Wiretap::class);
 
-        $this->app->singleton(LoggingClient::class, function ($app): LoggingClient {
-            return new LoggingClient($app->make(Wiretap::class));
+        $this->app->singleton(WiretapClient::class, function ($app): WiretapClient {
+            return new WiretapClient($app->make(Wiretap::class));
         });
     }
 
