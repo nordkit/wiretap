@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-04-19
+
+### Changed
+- Renamed `Guzzle\LoggingClient` to `Guzzle\WiretapClient`.
+- Renamed `Guzzle\LoggingMiddleware` to `Guzzle\WiretapMiddleware`.
+
 ## [1.1.0] - 2026-04-18
 
 ### Changed
@@ -22,10 +28,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `EloquentWriter` (queued via `WriteHttpLogJob`) and `LogWriter` backends.
 - `Http::withLoggable()` macro for polymorphic model association.
 - `HasHttpLogs` trait for retrieving associated logs from Eloquent models.
-- `WiretapClient` for a pre-wired Guzzle wrapper.
-- `WiretapMiddleware` for raw Guzzle `HandlerStack` integration.
+- `LoggingClient` for a pre-wired Guzzle wrapper.
+- `LoggingMiddleware` for raw Guzzle `HandlerStack` integration.
 - `Wiretap` facade with `log()`, `record()`, and `startTimer()` methods.
 
-[Unreleased]: https://github.com/nordkit/wiretap/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/nordkit/wiretap/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/nordkit/wiretap/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/nordkit/wiretap/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/nordkit/wiretap/releases/tag/v1.0.0
 
