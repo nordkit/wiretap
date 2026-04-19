@@ -22,7 +22,7 @@ function dispatchJobSync(WriteTraceJob $job): void
     app()->call([$job, 'handle']);
 }
 
-it('writes an trace entry to the database', function (): void {
+it('writes a trace entry to the database', function (): void {
     $entry = new HttpExchange(
         direction      : HttpDirection::Outbound,
         driver         : 'test',
