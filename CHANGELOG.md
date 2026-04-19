@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-04-19
+
+### Added
+- `inbound.store_ip` config key (`WIRETAP_INBOUND_STORE_IP`, default `false`) — when enabled, captures the caller's IP address on inbound traces (stored in `ip_address`, varchar 45, supports IPv4 and IPv6). Uses `$request->ip()` which respects Laravel's `TrustProxies` configuration. Disabled by default; IP addresses are personal data under GDPR and similar regulations.
+- `ip_address` nullable column (varchar 45) on the `wiretap_traces` table, added via a new migration.
+- `ipAddress` property on `HttpExchange` (nullable string, defaults to `null`).
+- `ipAddress` parameter added to `Wiretap::trace()` (optional, defaults to `null`) — non-Laravel apps that build a custom inbound tracing layer can pass the caller's IP directly.
+- `ip_address` included in `LogWriter` log context when set.
+
 ## [2.2.0] - 2026-04-19
 
 ### Added
@@ -122,7 +131,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `LoggingMiddleware` for raw Guzzle `HandlerStack` integration.
 - `Wiretap` facade with `log()`, `record()`, and `startTimer()` methods.
 
-[Unreleased]: https://github.com/nordkit/wiretap/compare/v2.2.0...HEAD
+[Unreleased]: https://github.com/nordkit/wiretap/compare/v2.3.0...HEAD
+[2.3.0]: https://github.com/nordkit/wiretap/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/nordkit/wiretap/compare/v2.1.1...v2.2.0
 [2.1.1]: https://github.com/nordkit/wiretap/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/nordkit/wiretap/compare/v2.0.0...v2.1.0

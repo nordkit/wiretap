@@ -23,6 +23,7 @@ use Nordkit\Wiretap\HttpDirection;
  * @property string|null $response_body
  * @property int $duration_ms
  * @property string|null $error_message
+ * @property string|null $ip_address
  * @property string|null $traceable_type
  * @property string|null $traceable_id
  * @property Carbon|null $created_at
@@ -49,6 +50,7 @@ class Trace extends Model
         'response_body',
         'duration_ms',
         'error_message',
+        'ip_address',
         'traceable_type',
         'traceable_id',
     ];

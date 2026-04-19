@@ -9,14 +9,17 @@ use Illuminate\Http\Client\Events\ConnectionFailed;
 use Illuminate\Http\Client\Events\ResponseReceived;
 use Illuminate\Http\Client\Request;
 use Illuminate\Http\Client\Response;
+use Illuminate\Http\Request as IlluminateRequest;
 use Nordkit\Wiretap\Contracts\TraceWriter;
 use Nordkit\Wiretap\HttpExchange;
 use Nordkit\Wiretap\Laravel\Listeners\RecordFailedConnection;
 use Nordkit\Wiretap\Laravel\Listeners\RecordOutboundRequest;
+use Nordkit\Wiretap\Laravel\Middleware\WiretapInboundMiddleware;
 use Nordkit\Wiretap\Laravel\TraceableScope;
 use Nordkit\Wiretap\Pipeline\TraceFilter;
 use Nordkit\Wiretap\Pipeline\TraceRedactor;
 use Nordkit\Wiretap\Wiretap;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 /**
  * @return array{Wiretap, ArrayObject}
@@ -142,4 +145,32 @@ it('RecordFailedConnection records a connection error', function (): void {
         ->and($calls[0]->responseStatus)->toBeNull()
         ->and($calls[0]->errorMessage)->toBe('cURL error 6: Could not resolve host')
         ->and($calls[0]->driver)->toBe('laravel-http');
+});
+
+it('WiretapInboundMiddleware captures ip_address when store_ip is true', function (): void {
+    [$wiretap, $calls] = makeCapturingWiretap();
+
+    config(['wiretap.inbound.store_ip' => true]);
+
+    $request = IlluminateRequest::create('https://app.example.com/ping', 'GET');
+    $request->server->set('REMOTE_ADDR', '5.6.7.8');
+    $middleware = new WiretapInboundMiddleware($wiretap, new TraceableScope);
+    $middleware->handle($request, fn ($r) => new SymfonyResponse('ok', 200));
+
+    expect($calls)->toHaveCount(1)
+        ->and($calls[0]->ipAddress)->toBe('5.6.7.8');
+});
+
+it('WiretapInboundMiddleware does not capture ip_address when store_ip is false', function (): void {
+    [$wiretap, $calls] = makeCapturingWiretap();
+
+    config(['wiretap.inbound.store_ip' => false]);
+
+    $request = IlluminateRequest::create('https://app.example.com/ping', 'GET');
+    $request->server->set('REMOTE_ADDR', '5.6.7.8');
+    $middleware = new WiretapInboundMiddleware($wiretap, new TraceableScope);
+    $middleware->handle($request, fn ($r) => new SymfonyResponse('ok', 200));
+
+    expect($calls)->toHaveCount(1)
+        ->and($calls[0]->ipAddress)->toBeNull();
 });

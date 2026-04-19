@@ -60,6 +60,7 @@ class Wiretap
         ?string $responseBody,
         ?Closure $timer = null,
         ?string $errorMessage = null,
+        ?string $ipAddress = null,
         ?object $traceable = null,
     ): void {
         try {
@@ -77,6 +78,7 @@ class Wiretap
                 responseBody: $responseBody,
                 durationMs: $durationMs,
                 errorMessage: $errorMessage,
+                ipAddress: $ipAddress,
                 traceable: $traceable,
             );
 

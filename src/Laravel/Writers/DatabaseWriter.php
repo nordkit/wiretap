@@ -43,6 +43,7 @@ class DatabaseWriter implements TraceWriter
             responseBody   : $entry->responseBody,
             durationMs     : $entry->durationMs,
             errorMessage   : $entry->errorMessage,
+            ipAddress      : $entry->ipAddress,
             traceable      : null,
         );
 

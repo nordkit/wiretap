@@ -62,6 +62,7 @@ CREATE TABLE `wiretap_traces` (
   `response_body` LONGTEXT NULL,
   `duration_ms` INT UNSIGNED NOT NULL,
   `error_message` TEXT NULL,
+  `ip_address` VARCHAR(45) NULL,
   `traceable_type` VARCHAR(255) NULL,
   `traceable_id` CHAR(26) NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -80,10 +81,60 @@ class MyPdoWriter implements TraceWriter
 {
     public function write(HttpExchange $exchange): void
     {
-        // Insert $exchange data using raw PDO...
+        // Insert $exchange data using raw PDO, e.g.:
+        // $exchange->ipAddress — caller IP (null unless explicitly passed)
     }
 }
 ```
+
+#### Inbound tracing and IP capture
+
+There is no equivalent of `WiretapInboundMiddleware` outside Laravel — you wire inbound tracing yourself inside your framework's request pipeline. Use `Wiretap::trace()` and pass the caller's IP via the `ipAddress` parameter:
+
+```php
+use Nordkit\Wiretap\HttpDirection;
+
+$timer = $wiretap->start();
+
+// ... dispatch the request through your application ...
+
+$wiretap->trace(
+    direction: HttpDirection::Inbound,
+    driver: 'my-framework',
+    url: 'https://api.myapp.com' . $_SERVER['REQUEST_URI'],
+    method: $_SERVER['REQUEST_METHOD'],
+    requestHeaders: getallheaders(),
+    requestBody: file_get_contents('php://input') ?: null,
+    responseStatus: http_response_code(),
+    responseHeaders: [],
+    responseBody: null,
+    timer: $timer,
+    ipAddress: $_SERVER['REMOTE_ADDR'] ?? null,
+);
+```
+
+Or construct an `HttpExchange` directly and call `capture()` when you need full control:
+
+```php
+use Nordkit\Wiretap\HttpExchange;
+use Nordkit\Wiretap\HttpDirection;
+
+$wiretap->capture(new HttpExchange(
+    direction: HttpDirection::Inbound,
+    driver: 'my-framework',
+    url: $request->getUri(),
+    method: $request->getMethod(),
+    requestHeaders: $request->getHeaders(),
+    requestBody: $request->getBody(),
+    responseStatus: $response->getStatusCode(),
+    responseHeaders: $response->getHeaders(),
+    responseBody: $response->getBody(),
+    durationMs: $durationMs,
+    ipAddress: $request->getServerParam('REMOTE_ADDR'),
+));
+```
+
+> **Privacy note:** `ip_address` is `null` by default everywhere. Only populate it when you have a legitimate need and appropriate data-retention policies in place — IP addresses are personal data under GDPR and similar regulations.
 
 ## Usage
 
@@ -179,6 +230,24 @@ Or restrict tracing to a specific subdomain in a multi-domain app:
 ```
 
 > **Note:** `inbound.include_hosts` / `exclude_hosts` are matched against the `Host` header of the incoming request — i.e. your own app's domain. They are not matched against the remote caller's IP or hostname.
+
+To capture the caller's IP address, enable the opt-in flag:
+
+```dotenv
+WIRETAP_INBOUND_STORE_IP=true
+```
+
+Or in the config:
+
+```php
+'inbound' => [
+    'store_ip' => true,
+],
+```
+
+The value is stored in the `ip_address` column (varchar 45, covers IPv4 and IPv6) and is populated via `$request->ip()`, which respects your app's `TrustProxies` configuration.
+
+> **Privacy note:** IP addresses are personal data under GDPR and similar regulations. This option is disabled by default — only enable it when you have a legitimate need and appropriate data-retention policies in place.
 
 #### Polymorphic Relations
 

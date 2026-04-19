@@ -52,6 +52,7 @@ class TraceRedactor
             responseBody   : $this->processBody($entry->responseBody, $this->config['store_response_body'], $entry->responseHeaders),
             durationMs     : $entry->durationMs,
             errorMessage   : $entry->errorMessage,
+            ipAddress      : $entry->ipAddress,
             traceable      : $entry->traceable,
         );
     }

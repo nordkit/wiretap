@@ -70,6 +70,7 @@ class WiretapInboundMiddleware
             responseHeaders: $this->flattenHeaders($response->headers->all()),
             responseBody   : ($responseBody !== '' && $responseBody !== false) ? $responseBody : null,
             durationMs     : $timer(),
+            ipAddress      : config('wiretap.inbound.store_ip') ? $request->ip() : null,
             traceable      : $traceable,
         );
 

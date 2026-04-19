@@ -130,6 +130,15 @@ return [
         */
         'include_paths' => [],
         'exclude_paths' => [],
+
+        /*
+        | store_ip: when true, captures the caller's IP address (respects trusted
+        | proxies configured via TrustProxies — uses $request->ip()).
+        | Disabled by default. Enable only when needed; IP addresses are personal
+        | data under GDPR and similar regulations.
+        | (WIRETAP_INBOUND_STORE_IP)
+        */
+        'store_ip' => env('WIRETAP_INBOUND_STORE_IP', false),
     ],
 
     /*
