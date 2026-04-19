@@ -28,7 +28,7 @@ class WiretapServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../../config/wiretap.php', 'wiretap');
 
         $this->app->afterResolving(Trace::class, function (Trace $model): void {
-            $model->setTable($this->app['config']->get('wiretap.table_name', 'traces'));
+            $model->setTable($this->app['config']->get('wiretap.table_name', 'wiretap_traces'));
         });
 
         $this->app->singleton(TraceableScope::class);
