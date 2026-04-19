@@ -26,6 +26,12 @@
 - Commit with `chore: prepare release vX.Y.Z` and push to `main`
 - **Never tag manually** — trigger the Release workflow via GitHub Actions → Release → Run workflow (enter version without `v` prefix)
 
+## Git
+
+- Always use `git --no-pager` to prevent output from being blocked by a pager (e.g. `git --no-pager log`, `git --no-pager diff`)
+- Commit messages use the [Conventional Commits](https://www.conventionalcommits.org) format (e.g. `fix:`, `feat:`, `chore:`)
+- Push directly to `main` for release preparation commits; use PRs for feature work
+
 ## Key types
 
 | Type | Purpose |
@@ -36,4 +42,5 @@
 | `TraceRedactor` | Pipeline step — scrubs sensitive data from an exchange |
 | `TraceWriter` | Interface — persists an exchange (database, log, custom) |
 | `WriteTraceJob` | Queued job that writes an exchange via Eloquent |
+
 
