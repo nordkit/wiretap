@@ -11,7 +11,7 @@ use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\Psr7\Utils;
 use Nordkit\Wiretap\Contracts\HttpLogWriter;
-use Nordkit\Wiretap\Guzzle\LoggingMiddleware;
+use Nordkit\Wiretap\Guzzle\WiretapMiddleware;
 use Nordkit\Wiretap\HttpDirection;
 use Nordkit\Wiretap\HttpLogEntry;
 use Nordkit\Wiretap\HttpLogFilter;
@@ -52,7 +52,7 @@ it('logs a successful Guzzle response', function (): void {
 
     $mock = new MockHandler([new Response(200, ['Content-Type' => 'application/json'], '{"ok":true}')]);
     $stack = HandlerStack::create($mock);
-    $stack->push(LoggingMiddleware::make($wiretap));
+    $stack->push(WiretapMiddleware::make($wiretap));
 
     (new Client(['handler' => $stack]))->get('https://api.example.com/test');
 
@@ -73,7 +73,7 @@ it('logs a failed Guzzle connection with errorMessage', function (): void {
         new ConnectException('Connection refused', new Request('POST', 'https://api.example.com/fail')),
     ]);
     $stack = HandlerStack::create($mock);
-    $stack->push(LoggingMiddleware::make($wiretap));
+    $stack->push(WiretapMiddleware::make($wiretap));
 
     try {
         (new Client(['handler' => $stack]))->post('https://api.example.com/fail');
@@ -94,7 +94,7 @@ it('does not swallow the original Guzzle exception', function (): void {
         new ConnectException('Network error', new Request('GET', 'https://fail.example.com')),
     ]);
     $stack = HandlerStack::create($mock);
-    $stack->push(LoggingMiddleware::make($wiretap));
+    $stack->push(WiretapMiddleware::make($wiretap));
 
     expect(fn () => (new Client(['handler' => $stack]))->get('https://fail.example.com'))
         ->toThrow(ConnectException::class);
@@ -105,7 +105,7 @@ it('preserves response body readability after logging', function (): void {
 
     $mock = new MockHandler([new Response(200, [], 'hello world')]);
     $stack = HandlerStack::create($mock);
-    $stack->push(LoggingMiddleware::make($wiretap));
+    $stack->push(WiretapMiddleware::make($wiretap));
 
     $response = (new Client(['handler' => $stack]))->get('https://api.example.com/greet');
 
@@ -117,7 +117,7 @@ it('rewinds a seekable request body stream after logging', function (): void {
 
     $mock = new MockHandler([new Response(200, [], '{}')]);
     $stack = HandlerStack::create($mock);
-    $stack->push(LoggingMiddleware::make($wiretap));
+    $stack->push(WiretapMiddleware::make($wiretap));
 
     $stream = Utils::streamFor('{"foo":"bar"}');
 
@@ -137,7 +137,7 @@ it('handles a non-seekable request body stream gracefully', function (): void {
 
     $mock = new MockHandler([new Response(200, [], '{}')]);
     $stack = HandlerStack::create($mock);
-    $stack->push(LoggingMiddleware::make($wiretap));
+    $stack->push(WiretapMiddleware::make($wiretap));
 
     // Wrap a readable-but-non-seekable stream
     $inner = Utils::streamFor('{"hello":"world"}');
@@ -157,7 +157,7 @@ it('forces HTTP method to uppercase', function (): void {
 
     $mock = new MockHandler([new Response(200)]);
     $stack = HandlerStack::create($mock);
-    $stack->push(LoggingMiddleware::make($wiretap));
+    $stack->push(WiretapMiddleware::make($wiretap));
 
     (new Client(['handler' => $stack]))->request('get', 'https://api.example.com/data');
 
@@ -172,7 +172,7 @@ it('flattens array header values to comma-separated strings', function (): void 
         new Response(200, ['X-Custom-Response' => ['A', 'B', 'C']]),
     ]);
     $stack = HandlerStack::create($mock);
-    $stack->push(LoggingMiddleware::make($wiretap));
+    $stack->push(WiretapMiddleware::make($wiretap));
 
     (new Client(['handler' => $stack]))->get('https://api.example.com/data', [
         'headers' => ['X-Custom-Request' => ['1', '2', '3']],
@@ -188,7 +188,7 @@ it('uses duration from TransferStats when provided', function (): void {
 
     $mock = new MockHandler([new Response(200)]);
     $stack = HandlerStack::create($mock);
-    $stack->push(LoggingMiddleware::make($wiretap));
+    $stack->push(WiretapMiddleware::make($wiretap));
 
     (new Client(['handler' => $stack]))->get('https://api.example.com/data', [
         'transfer_time' => 0.55, // 550ms, recognized by MockHandler to populate TransferStats

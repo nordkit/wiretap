@@ -8,7 +8,7 @@ use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
 use Nordkit\Wiretap\Contracts\HttpLogWriter;
-use Nordkit\Wiretap\Guzzle\LoggingClient;
+use Nordkit\Wiretap\Guzzle\WiretapClient;
 use Nordkit\Wiretap\HttpDirection;
 use Nordkit\Wiretap\HttpLogEntry;
 use Nordkit\Wiretap\HttpLogFilter;
@@ -16,9 +16,9 @@ use Nordkit\Wiretap\HttpLogRedactor;
 use Nordkit\Wiretap\Wiretap;
 
 /**
- * @return array{LoggingClient, ArrayObject, MockHandler}
+ * @return array{WiretapClient, ArrayObject, MockHandler}
  */
-function makeLoggingClient(array $responses = []): array
+function makeWiretapClient(array $responses = []): array
 {
     $calls = new ArrayObject;
     $writer = new class($calls) implements HttpLogWriter
@@ -44,13 +44,13 @@ function makeLoggingClient(array $responses = []): array
     $mock = new MockHandler($responses);
     $stack = HandlerStack::create($mock);
 
-    $client = new LoggingClient($wiretap, ['handler' => $stack]);
+    $client = new WiretapClient($wiretap, ['handler' => $stack]);
 
     return [$client, $calls, $mock];
 }
 
 it('logs successful HTTP requests automatically', function (string $method): void {
-    [$client, $calls] = makeLoggingClient([
+    [$client, $calls] = makeWiretapClient([
         new Response(200, ['Content-Type' => 'application/json'], '{"ok":true}'),
     ]);
 
@@ -67,7 +67,7 @@ it('logs successful HTTP requests automatically', function (string $method): voi
 })->with(['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD']);
 
 it('logs a POST request with request body', function (): void {
-    [$client, $calls] = makeLoggingClient([
+    [$client, $calls] = makeWiretapClient([
         new Response(201, [], '{"id":1}'),
     ]);
 
@@ -79,7 +79,7 @@ it('logs a POST request with request body', function (): void {
 });
 
 it('attaches a loggable model via withLoggable()', function (): void {
-    [$client, $calls] = makeLoggingClient([
+    [$client, $calls] = makeWiretapClient([
         new Response(200, [], '{"synced":true}'),
     ]);
 
@@ -91,7 +91,7 @@ it('attaches a loggable model via withLoggable()', function (): void {
 });
 
 it('consumes the loggable after the request so the next request has no loggable', function (): void {
-    [$client, $calls] = makeLoggingClient([
+    [$client, $calls] = makeWiretapClient([
         new Response(200, [], 'first'),
         new Response(200, [], 'second'),
     ]);
@@ -106,7 +106,7 @@ it('consumes the loggable after the request so the next request has no loggable'
 });
 
 it('logs a failed connection with errorMessage and re-throws', function (): void {
-    [$client, $calls] = makeLoggingClient([
+    [$client, $calls] = makeWiretapClient([
         new ConnectException('Connection refused', new Request('GET', 'https://api.example.com/fail')),
     ]);
 
@@ -119,7 +119,7 @@ it('logs a failed connection with errorMessage and re-throws', function (): void
 });
 
 it('preserves the loggable on failed requests', function (): void {
-    [$client, $calls] = makeLoggingClient([
+    [$client, $calls] = makeWiretapClient([
         new ConnectException('Timeout', new Request('POST', 'https://api.example.com/fail')),
     ]);
 
@@ -136,7 +136,7 @@ it('preserves the loggable on failed requests', function (): void {
 });
 
 it('preserves response body readability after logging', function (): void {
-    [$client] = makeLoggingClient([
+    [$client] = makeWiretapClient([
         new Response(200, [], 'hello world'),
     ]);
 

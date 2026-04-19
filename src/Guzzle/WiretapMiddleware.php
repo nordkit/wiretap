@@ -19,10 +19,10 @@ use Throwable;
  *
  * Usage:
  *   $stack = HandlerStack::create();
- *   $stack->push(LoggingMiddleware::make(app(Wiretap::class)));
+ *   $stack->push(WiretapMiddleware::make(app(Wiretap::class)));
  *   $client = new Client(['handler' => $stack]);
  */
-class LoggingMiddleware
+class WiretapMiddleware
 {
     use FlattensHeaders;
 

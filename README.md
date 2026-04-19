@@ -103,7 +103,7 @@ All settings are configured via `config/wiretap.php`. Below are the available ke
 | `queue.connection`| `HTTP_LOGGER_QUEUE_CONNECTION`| `null` | The queue connection to use (null defaults to app default). |
 | `queue.name` | `HTTP_LOGGER_QUEUE` | `logging` | The queue name to push log jobs into. |
 | `outbound.laravel_http`| `HTTP_LOGGER_LARAVEL_HTTP`| `true` | Automatically listen to Laravel Http Client events. |
-| `outbound.guzzle`| `HTTP_LOGGER_GUZZLE`| `true` | Bind `LoggingClient` into the application container automatically. |
+| `outbound.guzzle`| `HTTP_LOGGER_GUZZLE`| `true` | Bind `WiretapClient` into the application container automatically. |
 | `log_request_body`| `HTTP_LOGGER_LOG_REQUEST_BODY`| `true` | Capture the raw HTTP request body. |
 | `log_response_body`| `HTTP_LOGGER_LOG_RESPONSE_BODY`| `true`| Capture the raw HTTP response body. |
 | `max_body_bytes` | `HTTP_LOGGER_MAX_BODY_BYTES`| `65536` | Maximum size in bytes of retained bodies (64 KB). Null for unlimited. |
@@ -169,14 +169,14 @@ $logs = $order->httpLogs;
 
 #### Automatic Logging (Recommended)
 
-The package provides a `LoggingClient` wrapper that handles all logging automatically. It is registered as a singleton in the Laravel service container and can be injected directly via the constructor:
+The package provides a `WiretapClient` wrapper that handles all logging automatically. It is registered as a singleton in the Laravel service container and can be injected directly via the constructor:
 
 ```php
-use Nordkit\Wiretap\Guzzle\LoggingClient;
+use Nordkit\Wiretap\Guzzle\WiretapClient;
 
 class GitHubService
 {
-    public function __construct(private readonly LoggingClient $http) {}
+    public function __construct(private readonly WiretapClient $http) {}
 
     public function getUser(string $username): array
     {
@@ -198,13 +198,13 @@ $response = $this->http
 
 > **Note:** `withLoggable()` is designed for sequential requests. The loggable is consumed (reset to `null`) after the next request is dispatched.
 
-To pass custom Guzzle config options (e.g. `base_uri`, `timeout`), resolve the client manually with `LoggingClient::make()`:
+To pass custom Guzzle config options (e.g. `base_uri`, `timeout`), resolve the client manually with `WiretapClient::make()`:
 
 ```php
-use Nordkit\Wiretap\Guzzle\LoggingClient;
+use Nordkit\Wiretap\Guzzle\WiretapClient;
 use Nordkit\Wiretap\Wiretap;
 
-$client = LoggingClient::make(app(\Nordkit\Wiretap\Wiretap::class), [
+$client = WiretapClient::make(app(\Nordkit\Wiretap\Wiretap::class), [
     'base_uri' => 'https://api.example.com',
     'timeout'  => 10,
 ]);
@@ -217,11 +217,11 @@ If you need to attach logging to an existing Guzzle `HandlerStack` (e.g. wrappin
 ```php
 use GuzzleHttp\Client;
 use GuzzleHttp\HandlerStack;
-use Nordkit\Wiretap\Guzzle\LoggingMiddleware;
+use Nordkit\Wiretap\Guzzle\WiretapMiddleware;
 use Nordkit\Wiretap\Wiretap;
 
 $stack = HandlerStack::create();
-$stack->push(LoggingMiddleware::make(app(\Nordkit\Wiretap\Wiretap::class)));
+$stack->push(WiretapMiddleware::make(app(\Nordkit\Wiretap\Wiretap::class)));
 
 $client = new Client(['handler' => $stack]);
 
