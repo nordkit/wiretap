@@ -28,7 +28,12 @@ function makePipeline(array $overrides = []): TraceFilter
         'enabled' => true,
         'include_hosts' => [],
         'exclude_hosts' => [],
+        'include_paths' => [],
         'exclude_paths' => [],
+        'inbound_include_hosts' => [],
+        'inbound_exclude_hosts' => [],
+        'inbound_include_paths' => [],
+        'inbound_exclude_paths' => [],
     ], $overrides));
 }
 
@@ -56,10 +61,78 @@ it('properly drops the path filter config', function (): void {
     expect($pipeline->shouldTrace(makeEntry('https://api.example.com/orders')))->toBe(true);
 });
 
+it('only traces paths matching include_paths', function (): void {
+    $pipeline = makePipeline(['include_paths' => ['#^https://api\.example\.com/orders#']]);
+    expect($pipeline->shouldTrace(makeEntry('https://api.example.com/orders')))->toBeTrue();
+    expect($pipeline->shouldTrace(makeEntry('https://api.example.com/health')))->toBeFalse();
+});
+
+it('gives precedence to exclude_paths over include_paths', function (): void {
+    $pipeline = makePipeline([
+        'include_paths' => ['#/orders#'],
+        'exclude_paths' => ['#/orders#'],
+    ]);
+    expect($pipeline->shouldTrace(makeEntry('https://api.example.com/orders')))->toBeFalse();
+});
+
+it('throws InvalidArgumentException for an invalid include_paths regex', function (): void {
+    expect(fn () => makePipeline(['include_paths' => ['not-a-valid-regex']]))->toThrow(InvalidArgumentException::class);
+});
+
 it('throws InvalidArgumentException for an invalid exclude_paths regex', function (): void {
     expect(fn () => makePipeline(['exclude_paths' => ['not-a-valid-regex']]))->toThrow(InvalidArgumentException::class);
 });
 
 it('does not throw for a valid exclude_paths regex', function (): void {
     expect(fn () => makePipeline(['exclude_paths' => ['#/health#']]))->not->toThrow(InvalidArgumentException::class);
+});
+
+it('applies inbound_include_hosts only to inbound exchanges', function (): void {
+    $pipeline = makePipeline(['inbound_include_hosts' => ['webhooks.myapp.com']]);
+
+    $inbound = new HttpExchange(
+        direction: HttpDirection::Inbound, driver: 'laravel-inbound',
+        url: 'https://webhooks.myapp.com/stripe', method: 'POST',
+        requestHeaders: [], requestBody: null, responseStatus: 200,
+        responseHeaders: [], responseBody: null, durationMs: 1,
+    );
+
+    $inboundOther = new HttpExchange(
+        direction: HttpDirection::Inbound, driver: 'laravel-inbound',
+        url: 'https://api.myapp.com/orders', method: 'GET',
+        requestHeaders: [], requestBody: null, responseStatus: 200,
+        responseHeaders: [], responseBody: null, durationMs: 1,
+    );
+
+    $outbound = makeEntry('https://api.example.com/orders');
+
+    // Inbound to the allowed webhook host → trace
+    expect($pipeline->shouldTrace($inbound))->toBeTrue();
+    // Inbound to a different host → skip
+    expect($pipeline->shouldTrace($inboundOther))->toBeFalse();
+    // Outbound is unaffected by inbound_include_hosts → trace
+    expect($pipeline->shouldTrace($outbound))->toBeTrue();
+});
+
+it('applies inbound_exclude_hosts only to inbound exchanges', function (): void {
+    $pipeline = makePipeline(['inbound_exclude_hosts' => ['internal.myapp.com']]);
+
+    $blocked = new HttpExchange(
+        direction: HttpDirection::Inbound, driver: 'laravel-inbound',
+        url: 'https://internal.myapp.com/ping', method: 'GET',
+        requestHeaders: [], requestBody: null, responseStatus: 200,
+        responseHeaders: [], responseBody: null, durationMs: 1,
+    );
+
+    $allowed = new HttpExchange(
+        direction: HttpDirection::Inbound, driver: 'laravel-inbound',
+        url: 'https://api.myapp.com/orders', method: 'GET',
+        requestHeaders: [], requestBody: null, responseStatus: 200,
+        responseHeaders: [], responseBody: null, durationMs: 1,
+    );
+
+    expect($pipeline->shouldTrace($blocked))->toBeFalse();
+    expect($pipeline->shouldTrace($allowed))->toBeTrue();
+    // Outbound to the same host is unaffected → trace
+    expect($pipeline->shouldTrace(makeEntry('https://internal.myapp.com/data')))->toBeTrue();
 });

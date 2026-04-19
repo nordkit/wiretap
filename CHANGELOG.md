@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-04-19
+
+### Added
+- **Inbound HTTP tracing** — `Laravel\Middleware\WiretapInboundMiddleware` captures every incoming request and response as an `HttpExchange` with `direction = inbound`. Enable via `WIRETAP_INBOUND=true` (opt-in, disabled by default).
+- `inbound.laravel_http` config key (`WIRETAP_INBOUND`, default `false`) — pushes `WiretapInboundMiddleware` onto the global HTTP kernel when enabled.
+- `inbound.include_hosts` / `inbound.exclude_hosts` config keys — filter inbound tracing by the `Host` header of the incoming request (your app's domain). Useful for multi-domain apps or limiting tracing to a specific subdomain (e.g. `webhooks.myapp.com` for payment provider callbacks). Independent from the outbound `include_hosts` / `exclude_hosts`.
+- `inbound.exclude_paths` config key — regex patterns for inbound URLs to skip, kept separate from the outbound `exclude_paths` list so each direction can be filtered independently.
+- `Laravel\Middleware\WiretapTraceableMiddleware` — route middleware that binds a route model binding to the current inbound trace. The `wiretap.traceable` alias is registered automatically by the service provider.
+- `->traceable(App\Models\Order::class)` route macro — fluent shorthand for `->middleware('wiretap.traceable:...')`, mirroring the outbound `Http::withTraceable()` pattern.
+- `TraceFilter` is now fully direction-aware: outbound exchanges use top-level `include_hosts`, `exclude_hosts`, and `exclude_paths`; inbound exchanges use `inbound.include_hosts`, `inbound.exclude_hosts`, and `inbound.exclude_paths`.
+
+### Fixed
+- `DatabaseWriter` now strips the `traceable` object from `HttpExchange` before passing it to `WriteTraceJob`. This prevents serialization failures when the traceable is an object type that cannot be serialized by queue drivers (e.g. anonymous classes), and eliminates unnecessary data from the queued payload.
+
 ## [2.0.0] - 2026-04-19
 
 ### Added
@@ -89,7 +103,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `LoggingMiddleware` for raw Guzzle `HandlerStack` integration.
 - `Wiretap` facade with `log()`, `record()`, and `startTimer()` methods.
 
-[Unreleased]: https://github.com/nordkit/wiretap/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/nordkit/wiretap/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/nordkit/wiretap/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/nordkit/wiretap/compare/v1.2.3...v2.0.0
 [1.2.3]: https://github.com/nordkit/wiretap/compare/v1.2.2...v1.2.3
 [1.2.2]: https://github.com/nordkit/wiretap/compare/v1.2.1...v1.2.2

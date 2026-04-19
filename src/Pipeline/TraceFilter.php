@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nordkit\Wiretap\Pipeline;
 
+use Nordkit\Wiretap\HttpDirection;
 use Nordkit\Wiretap\HttpExchange;
 
 /**
@@ -11,19 +12,53 @@ use Nordkit\Wiretap\HttpExchange;
  *
  * Precedence (first match wins):
  *  1. Global enabled flag is false -> discard.
- *  2. Host in exclude_hosts -> discard.
- *  3. include_hosts non-empty and host NOT in list -> discard.
- *  4. URL matches an exclude_paths regex -> discard.
- *  5. Otherwise -> trace.
+ *  2. Host in the direction's exclude_hosts -> discard.
+ *  3. direction's include_hosts non-empty and host NOT in list -> discard.
+ *  4. URL matches the direction-specific exclude_paths regex -> discard.
+ *  5. direction's include_paths non-empty and URL does NOT match any -> discard.
+ *  6. Otherwise -> trace.
+ *
+ * Outbound uses outbound.include_hosts / outbound.exclude_hosts / outbound.include_paths / outbound.exclude_paths.
+ * Inbound  uses inbound.include_hosts / inbound.exclude_hosts / inbound.include_paths / inbound.exclude_paths.
  */
 class TraceFilter
 {
-    /** @param array{enabled: bool, include_hosts: list<string>, exclude_hosts: list<string>, exclude_paths: list<string>} $config */
+    /**
+     * @param array{
+     *     enabled: bool,
+     *     include_hosts: list<string>,
+     *     exclude_hosts: list<string>,
+     *     include_paths: list<string>,
+     *     exclude_paths: list<string>,
+     *     inbound_include_hosts: list<string>,
+     *     inbound_exclude_hosts: list<string>,
+     *     inbound_include_paths: list<string>,
+     *     inbound_exclude_paths: list<string>,
+     * } $config
+     */
     public function __construct(private readonly array $config)
     {
+        foreach ($this->config['include_paths'] as $pattern) {
+            if (@preg_match($pattern, '') === false) {
+                throw new \InvalidArgumentException("Invalid include_paths regex: {$pattern}");
+            }
+        }
+
         foreach ($this->config['exclude_paths'] as $pattern) {
             if (@preg_match($pattern, '') === false) {
                 throw new \InvalidArgumentException("Invalid exclude_paths regex: {$pattern}");
+            }
+        }
+
+        foreach ($this->config['inbound_include_paths'] as $pattern) {
+            if (@preg_match($pattern, '') === false) {
+                throw new \InvalidArgumentException("Invalid inbound_include_paths regex: {$pattern}");
+            }
+        }
+
+        foreach ($this->config['inbound_exclude_paths'] as $pattern) {
+            if (@preg_match($pattern, '') === false) {
+                throw new \InvalidArgumentException("Invalid inbound_exclude_paths regex: {$pattern}");
             }
         }
     }
@@ -40,22 +75,33 @@ class TraceFilter
         $parsedHost = @parse_url($entry->url, PHP_URL_HOST);
         $host = is_string($parsedHost) ? $parsedHost : '';
 
-        if ($this->hostIsExcluded($host)) {
+        $isInbound = $entry->direction === HttpDirection::Inbound;
+
+        $includeHosts = $isInbound ? $this->config['inbound_include_hosts'] : $this->config['include_hosts'];
+        $excludeHosts = $isInbound ? $this->config['inbound_exclude_hosts'] : $this->config['exclude_hosts'];
+        $includePaths = $isInbound ? $this->config['inbound_include_paths'] : $this->config['include_paths'];
+        $excludePaths = $isInbound ? $this->config['inbound_exclude_paths'] : $this->config['exclude_paths'];
+
+        if ($this->hostIsExcluded($host, $excludeHosts)) {
             return false;
         }
-        if ($this->hostIsNotIncluded($host)) {
+        if ($this->hostIsNotIncluded($host, $includeHosts)) {
             return false;
         }
-        if ($this->pathIsExcluded($entry->url)) {
+        if ($this->pathIsExcluded($entry->url, $excludePaths)) {
+            return false;
+        }
+        if ($this->pathIsNotIncluded($entry->url, $includePaths)) {
             return false;
         }
 
         return true;
     }
 
-    private function hostIsExcluded(string $host): bool
+    /** @param list<string> $excludeHosts */
+    private function hostIsExcluded(string $host, array $excludeHosts): bool
     {
-        foreach ($this->config['exclude_hosts'] as $excluded) {
+        foreach ($excludeHosts as $excluded) {
             if (fnmatch($excluded, $host)) {
                 return true;
             }
@@ -64,13 +110,14 @@ class TraceFilter
         return false;
     }
 
-    private function hostIsNotIncluded(string $host): bool
+    /** @param list<string> $includeHosts */
+    private function hostIsNotIncluded(string $host, array $includeHosts): bool
     {
-        if (empty($this->config['include_hosts'])) {
+        if (empty($includeHosts)) {
             return false;
         }
 
-        foreach ($this->config['include_hosts'] as $included) {
+        foreach ($includeHosts as $included) {
             if (fnmatch($included, $host)) {
                 return false;
             }
@@ -79,14 +126,31 @@ class TraceFilter
         return true;
     }
 
-    private function pathIsExcluded(string $url): bool
+    /** @param list<string> $patterns */
+    private function pathIsExcluded(string $url, array $patterns): bool
     {
-        foreach ($this->config['exclude_paths'] as $pattern) {
+        foreach ($patterns as $pattern) {
             if (preg_match($pattern, $url) === 1) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    /** @param list<string> $patterns */
+    private function pathIsNotIncluded(string $url, array $patterns): bool
+    {
+        if (empty($patterns)) {
+            return false;
+        }
+
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $url) === 1) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

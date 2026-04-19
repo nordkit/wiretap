@@ -1,17 +1,17 @@
 # Wiretap
 
-Tap into your app's HTTP traffic. Filter, redact, and store outbound requests with zero boilerplate.
+Tap into your app's HTTP traffic. Filter, redact, and store inbound and outbound requests with zero boilerplate.
 
-A highly configurable HTTP tracing package, built for Laravel. Wiretap automatically captures every outbound request and response — headers, payloads, status codes, and timing — then stores them securely with full control over what gets kept, what gets scrubbed, and where it all ends up. Works with any PHP application via a lightweight `TraceWriter` interface.
+A highly configurable HTTP tracing package, built for Laravel. Wiretap automatically captures every outbound request and response — and optionally every inbound request too — including headers, payloads, status codes, and timing. Stores them securely with full control over what gets kept, what gets scrubbed, and where it all ends up. Works with any PHP application via a lightweight `TraceWriter` interface.
 
 ### Key Features
 
 - **Storage Backends**: Persist traces to your SQL `database` (default) or stream them to a structured Laravel `log` channel.
-- **Automatic Laravel Integration**: Zero-config capture of all Laravel HTTP Client requests via event listeners.
+- **Automatic Laravel Integration**: Zero-config capture of all Laravel HTTP Client requests via event listeners. Opt-in capture of all inbound requests via global middleware.
 - **Native Guzzle Support**: Drop-in `WiretapClient` wrapper and `WiretapMiddleware` for existing Guzzle stacks.
 - **Advanced Redaction**: Automatically scrubs sensitive headers and recursively redacts JSON payload keys before anything touches storage.
 - **Filtering & Truncation**: Allowlist/denylist hosts, exclude URL patterns, and cap body sizes to keep your storage lean.
-- **Eloquent Polymorphism**: Attach traces to any Eloquent model with `withTraceable()` and `HasTraces` — then query them back in one line.
+- **Eloquent Polymorphism**: Attach traces to any Eloquent model with `withTraceable()` / `->traceable()` and `HasTraces` — then query them back in one line.
 - **Manual Tracing**: Use `Wiretap::trace()` to capture requests from raw cURL, custom SDKs, or any HTTP client — with built-in timing and safe exception handling.
 
 ## Requirements
@@ -91,29 +91,35 @@ class MyPdoWriter implements TraceWriter
 
 All settings are configured via `config/wiretap.php`. Below are the available keys, their corresponding environment variables, and descriptions:
 
-| Config Key | Environment Variable | Default                                    | Description |
-|---|---|--------------------------------------------|---|
-| `enabled` | `WIRETAP_ENABLED` | `true`                                     | Globally enable or disable tracing. |
-| `debug` | `WIRETAP_DEBUG` | `false`                                    | When true, exceptions are forwarded to Laravel's `report()` handler rather than swallowed. |
-| `table_name` | — | `wiretap_traces`                           | The database table used by the Eloquent model. |
-| `model` | — | `'Nordkit\Wiretap\Laravel\Models\Trace'`   | Override this to use a custom Eloquent model. |
-| `driver` | `WIRETAP_DRIVER` | `database`                                 | Storage backend. Supported: `database`, `log`. |
-| `log_channel` | `WIRETAP_LOG_CHANNEL` | `null`                                     | Specify which channel to use when the driver is `log`. Leaves as null to use the default app channel. |
-| `queue.enabled` | `WIRETAP_QUEUE_ENABLED` | `true`                                     | Queue traces for async writes. (Set to false for synchronous storage—not recommended for production). |
-| `queue.connection`| `WIRETAP_QUEUE_CONNECTION`| `null`                                     | The queue connection to use (null defaults to app default). |
-| `queue.name` | `WIRETAP_QUEUE` | `logging`                                  | The queue name to push trace jobs into. |
-| `outbound.laravel_http`| `WIRETAP_LARAVEL_HTTP`| `true`                                     | Automatically listen to Laravel Http Client events. |
-| `outbound.guzzle`| `WIRETAP_GUZZLE`| `true`                                     | Bind `WiretapClient` into the application container automatically. |
-| `store_request_body`| `WIRETAP_STORE_REQUEST_BODY`| `true`                                     | Capture the raw HTTP request body. |
-| `store_response_body`| `WIRETAP_STORE_RESPONSE_BODY`| `true`                                     | Capture the raw HTTP response body. |
-| `max_body_bytes` | `WIRETAP_MAX_BODY_BYTES`| `65536`                                    | Maximum size in bytes of retained bodies (64 KB). Null for unlimited. |
-| `include_hosts` | — | `[]`                                       | Only trace requests to these hosts. Wildcards supported (e.g., `*.api.com`). |
-| `exclude_hosts` | — | `[]`                                       | Skip tracing to these hosts. Takes priority over `include_hosts`. |
-| `exclude_paths` | — | `[]`                                       | Skip tracing requests when full URLs match these regex patterns. |
-| `redact_string` | — | `[REDACTED]`                               | String value used to replace redacted content. |
-| `redact_request_headers`| — | `[...]`                                    | List of case-insensitive request headers to redact. |
-| `redact_response_headers`| — | `[...]`                                    | List of case-insensitive response headers to redact. |
-| `redact_body_keys`| — | `[...]`                                    | List of JSON body keys to scrub recursively. |
+| Config Key | Environment Variable | Default | Description |
+|---|---|---|---|
+| `enabled` | `WIRETAP_ENABLED` | `true` | Globally enable or disable tracing. |
+| `debug` | `WIRETAP_DEBUG` | `false` | When true, exceptions are forwarded to Laravel's `report()` handler rather than swallowed. |
+| `table_name` | — | `wiretap_traces` | The database table used by the Eloquent model. |
+| `model` | — | `'Nordkit\Wiretap\Laravel\Models\Trace'` | Override this to use a custom Eloquent model. |
+| `driver` | `WIRETAP_DRIVER` | `database` | Storage backend. Supported: `database`, `log`. |
+| `log_channel` | `WIRETAP_LOG_CHANNEL` | `null` | Specify which channel to use when the driver is `log`. Null uses the default app channel. |
+| `queue.enabled` | `WIRETAP_QUEUE_ENABLED` | `true` | Queue traces for async writes. Set to false for synchronous storage (not recommended in production). |
+| `queue.connection` | `WIRETAP_QUEUE_CONNECTION` | `null` | The queue connection to use. Null defaults to the app default. |
+| `queue.name` | `WIRETAP_QUEUE` | `logging` | The queue name to push trace jobs into. |
+| `outbound.laravel_http` | `WIRETAP_LARAVEL_HTTP` | `true` | Automatically listen to Laravel Http Client events. |
+| `outbound.guzzle` | `WIRETAP_GUZZLE` | `true` | Bind `WiretapClient` into the application container automatically. |
+| `outbound.include_hosts` | — | `[]` | Only trace outbound requests to these hosts. Wildcards supported (e.g. `*.api.com`). Empty = trace all. |
+| `outbound.exclude_hosts` | — | `[]` | Skip outbound requests to these hosts. Takes priority over `outbound.include_hosts`. Wildcards supported. |
+| `outbound.include_paths` | — | `[]` | Only trace outbound requests matching these regex patterns. Empty = trace all paths. |
+| `outbound.exclude_paths` | — | `[]` | Skip outbound requests matching these regex patterns. Takes priority over `outbound.include_paths`. |
+| `inbound.laravel_http` | `WIRETAP_INBOUND` | `false` | Capture all incoming requests via global middleware. Opt-in. |
+| `inbound.include_hosts` | — | `[]` | Only trace inbound requests arriving at these hosts (matched against the `Host` header). Useful for multi-domain apps. Wildcards supported. Empty = trace all. |
+| `inbound.exclude_hosts` | — | `[]` | Skip inbound requests arriving at these hosts. Takes priority over `inbound.include_hosts`. Wildcards supported. |
+| `inbound.include_paths` | — | `[]` | Only trace inbound requests matching these regex patterns. Empty = trace all paths. |
+| `inbound.exclude_paths` | — | `[]` | Skip inbound requests matching these regex patterns. Takes priority over `inbound.include_paths`. |
+| `store_request_body` | `WIRETAP_STORE_REQUEST_BODY` | `true` | Capture the raw HTTP request body. |
+| `store_response_body` | `WIRETAP_STORE_RESPONSE_BODY` | `true` | Capture the raw HTTP response body. |
+| `max_body_bytes` | `WIRETAP_MAX_BODY_BYTES` | `65536` | Maximum size in bytes of retained bodies (64 KB). Null for unlimited. |
+| `redact_string` | — | `[REDACTED]` | String value used to replace redacted content. |
+| `redact_request_headers` | — | `[...]` | List of case-insensitive request headers to redact. |
+| `redact_response_headers` | — | `[...]` | List of case-insensitive response headers to redact. |
+| `redact_body_keys` | — | `[...]` | List of JSON body keys to scrub recursively. |
 
 ### Laravel Integration
 
@@ -129,6 +135,45 @@ $response = Http::withHeaders(['X-First' => 'foo'])
 
 // The request and response are now automatically stored in the database.
 ```
+
+#### Inbound HTTP Traffic
+
+Wiretap can also capture all **incoming** requests to your application. This is disabled by default — opt-in by setting the environment variable:
+
+```dotenv
+WIRETAP_INBOUND=true
+```
+
+Or enable it directly in the config:
+
+```php
+'inbound' => [
+    'laravel_http' => true,
+],
+```
+
+When enabled, `WiretapInboundMiddleware` is automatically pushed onto the global HTTP kernel. Every request your app receives — and its response — will be traced through the same pipeline as outbound traffic, including redaction and filtering.
+
+You can limit which inbound requests are traced using the `include_paths` and `exclude_paths` options. For example, to only trace webhook callbacks:
+
+```php
+'inbound' => [
+    'laravel_http' => true,
+    'include_paths' => ['#^/webhooks#'],
+    'exclude_paths' => ['#^/health#'],
+],
+```
+
+Or restrict tracing to a specific subdomain in a multi-domain app:
+
+```php
+'inbound' => [
+    'laravel_http' => true,
+    'include_hosts' => ['webhooks.myapp.com'],
+],
+```
+
+> **Note:** `inbound.include_hosts` / `exclude_hosts` are matched against the `Host` header of the incoming request — i.e. your own app's domain. They are not matched against the remote caller's IP or hostname.
 
 #### Polymorphic Relations
 
@@ -146,6 +191,17 @@ Http::withTraceable($order)
 ```
 
 > **Note:** `withTraceable()` stores the model in a per-process singleton and is designed for sequential requests. When using `Http::pool()` with multiple concurrent requests, only the most recently set traceable will be attached. For concurrent use-cases, construct an `HttpExchange` directly with the desired `traceable` and call `Wiretap::capture()` manually.
+
+For **inbound** requests, attach a model to the trace using the `->traceable()` route macro. It scans the route's already-resolved model bindings and pushes the first match onto the trace scope:
+
+```php
+use App\Models\Order;
+
+Route::post('/orders/{order}/sync', OrderSyncController::class)
+    ->traceable(Order::class);
+```
+
+> **Note:** `->traceable()` relies on route model binding being resolved before it runs. Routes registered in the `web` or `api` middleware group satisfy this automatically via `SubstituteBindings`.
 
 To easily retrieve the associated traces, add the provided trait (or manually define the `morphMany` relationship) on your Eloquent model:
 

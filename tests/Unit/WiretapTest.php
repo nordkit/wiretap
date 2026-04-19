@@ -24,7 +24,7 @@ function makeThrowingWiretap(): array
 
     $wiretap = new Wiretap(
         $writer,
-        new TraceFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'exclude_paths' => []]),
+        new TraceFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'include_paths' => [], 'exclude_paths' => [], 'inbound_include_hosts' => [], 'inbound_exclude_hosts' => [], 'inbound_include_paths' => [], 'inbound_exclude_paths' => []]),
         new TraceRedactor([
             'store_request_body' => true, 'store_response_body' => true, 'max_body_bytes' => null,
             'redact_request_headers' => [], 'redact_response_headers' => [], 'redact_body_keys' => [],
@@ -87,7 +87,7 @@ it('accurately tracks duration with start() and stopTimer() implicitly via trace
 
     $wiretap = new Wiretap(
         $writer,
-        new TraceFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'exclude_paths' => []]),
+        new TraceFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'include_paths' => [], 'exclude_paths' => [], 'inbound_include_hosts' => [], 'inbound_exclude_hosts' => [], 'inbound_include_paths' => [], 'inbound_exclude_paths' => []]),
         new TraceRedactor([
             'store_request_body' => true, 'store_response_body' => true, 'max_body_bytes' => null,
             'redact_request_headers' => [], 'redact_response_headers' => [], 'redact_body_keys' => [],
@@ -130,7 +130,7 @@ it('defaults durationMs to 0 when no timer is passed to trace()', function (): v
 
     $wiretap = new Wiretap(
         $writer,
-        new TraceFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'exclude_paths' => []]),
+        new TraceFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'include_paths' => [], 'exclude_paths' => [], 'inbound_include_hosts' => [], 'inbound_exclude_hosts' => [], 'inbound_include_paths' => [], 'inbound_exclude_paths' => []]),
         new TraceRedactor([
             'store_request_body' => true, 'store_response_body' => true, 'max_body_bytes' => null,
             'redact_request_headers' => [], 'redact_response_headers' => [], 'redact_body_keys' => [],
@@ -161,7 +161,7 @@ it('start() returns a Closure that yields a positive integer', function (): void
         {
             public function write(HttpExchange $entry): void {}
         },
-        new TraceFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'exclude_paths' => []]),
+        new TraceFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'include_paths' => [], 'exclude_paths' => [], 'inbound_include_hosts' => [], 'inbound_exclude_hosts' => [], 'inbound_include_paths' => [], 'inbound_exclude_paths' => []]),
         new TraceRedactor([
             'store_request_body' => true, 'store_response_body' => true, 'max_body_bytes' => null,
             'redact_request_headers' => [], 'redact_response_headers' => [], 'redact_body_keys' => [],

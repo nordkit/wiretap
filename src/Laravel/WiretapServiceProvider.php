@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Nordkit\Wiretap\Laravel;
 
+use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Http\Client\Events\ConnectionFailed;
 use Illuminate\Http\Client\Events\ResponseReceived;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\ServiceProvider;
@@ -14,6 +16,8 @@ use Nordkit\Wiretap\Contracts\TraceWriter;
 use Nordkit\Wiretap\Guzzle\WiretapClient;
 use Nordkit\Wiretap\Laravel\Listeners\RecordFailedConnection;
 use Nordkit\Wiretap\Laravel\Listeners\RecordOutboundRequest;
+use Nordkit\Wiretap\Laravel\Middleware\WiretapInboundMiddleware;
+use Nordkit\Wiretap\Laravel\Middleware\WiretapTraceableMiddleware;
 use Nordkit\Wiretap\Laravel\Models\Trace;
 use Nordkit\Wiretap\Laravel\Writers\DatabaseWriter;
 use Nordkit\Wiretap\Laravel\Writers\LogWriter;
@@ -64,9 +68,14 @@ class WiretapServiceProvider extends ServiceProvider
 
             return new TraceFilter([
                 'enabled' => (bool) $config['enabled'],
-                'include_hosts' => (array) $config['include_hosts'],
-                'exclude_hosts' => (array) $config['exclude_hosts'],
-                'exclude_paths' => (array) $config['exclude_paths'],
+                'include_hosts' => (array) ($config['outbound']['include_hosts'] ?? []),
+                'exclude_hosts' => (array) ($config['outbound']['exclude_hosts'] ?? []),
+                'include_paths' => (array) ($config['outbound']['include_paths'] ?? []),
+                'exclude_paths' => (array) ($config['outbound']['exclude_paths'] ?? []),
+                'inbound_include_hosts' => (array) ($config['inbound']['include_hosts'] ?? []),
+                'inbound_exclude_hosts' => (array) ($config['inbound']['exclude_hosts'] ?? []),
+                'inbound_include_paths' => (array) ($config['inbound']['include_paths'] ?? []),
+                'inbound_exclude_paths' => (array) ($config['inbound']['exclude_paths'] ?? []),
             ]);
         });
 
@@ -116,5 +125,16 @@ class WiretapServiceProvider extends ServiceProvider
             Event::listen(ResponseReceived::class, RecordOutboundRequest::class);
             Event::listen(ConnectionFailed::class, RecordFailedConnection::class);
         }
+
+        if ($this->app['config']['wiretap.inbound.laravel_http']) {
+            $this->app[Kernel::class]->pushMiddleware(WiretapInboundMiddleware::class);
+        }
+
+        $this->app['router']->aliasMiddleware('wiretap.traceable', WiretapTraceableMiddleware::class);
+
+        Route::macro('traceable', function (string $traceableClass): Route {
+            /** @var Route $this */
+            return $this->middleware('wiretap.traceable:'.$traceableClass);
+        });
     }
 }

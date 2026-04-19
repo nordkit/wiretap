@@ -27,7 +27,26 @@ class DatabaseWriter implements TraceWriter
             $traceableId = (string) $entry->traceable->getKey();
         }
 
-        $job = new WriteTraceJob($entry, $traceableType, $traceableId);
+        // Strip the traceable object from the exchange before queueing.
+        // The polymorphic relation is already captured in $traceableType / $traceableId,
+        // and arbitrary objects (including anonymous classes) cannot always be serialized
+        // by queue drivers. The job's handle() method never reads exchange->traceable.
+        $serializableEntry = new HttpExchange(
+            direction      : $entry->direction,
+            driver         : $entry->driver,
+            url            : $entry->url,
+            method         : $entry->method,
+            requestHeaders : $entry->requestHeaders,
+            requestBody    : $entry->requestBody,
+            responseStatus : $entry->responseStatus,
+            responseHeaders: $entry->responseHeaders,
+            responseBody   : $entry->responseBody,
+            durationMs     : $entry->durationMs,
+            errorMessage   : $entry->errorMessage,
+            traceable      : null,
+        );
+
+        $job = new WriteTraceJob($serializableEntry, $traceableType, $traceableId);
 
         if ($this->queueConfig['enabled']) {
             $job->onConnection($this->queueConfig['connection'])

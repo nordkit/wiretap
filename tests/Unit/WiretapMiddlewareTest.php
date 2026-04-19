@@ -36,7 +36,7 @@ function makeGuzzleCapturingWiretap(): array
 
     $wiretap = new Wiretap(
         $writer,
-        new TraceFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'exclude_paths' => []]),
+        new TraceFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'include_paths' => [], 'exclude_paths' => [], 'inbound_include_hosts' => [], 'inbound_exclude_hosts' => [], 'inbound_include_paths' => [], 'inbound_exclude_paths' => []]),
         new TraceRedactor([
             'store_request_body' => true, 'store_response_body' => true, 'max_body_bytes' => null,
             'redact_request_headers' => [], 'redact_response_headers' => [], 'redact_body_keys' => [],

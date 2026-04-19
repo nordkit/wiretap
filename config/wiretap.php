@@ -78,6 +78,58 @@ return [
     'outbound' => [
         'laravel_http' => env('WIRETAP_LARAVEL_HTTP', true),
         'guzzle' => env('WIRETAP_GUZZLE', true),
+
+        /*
+        | Host filtering for outbound requests.
+        | Matched against the hostname of the URL being requested (the remote service).
+        | include_hosts: empty = trace all. Non-empty = only these hosts. Supports wildcards.
+        | exclude_hosts: always takes priority over include_hosts. Supports wildcards.
+        | Example: exclude_hosts: ['*.internal.example.com']
+        */
+        'include_hosts' => [],
+        'exclude_hosts' => [],
+
+        /*
+        | Regex patterns matched against the full outbound URL.
+        | include_paths: empty = trace all paths. Non-empty = only trace matching paths.
+        | exclude_paths: always takes priority over include_paths. Matching requests are skipped.
+        | Example: include_paths: ['#^/api/payments#'], exclude_paths: ['#/health#']
+        */
+        'include_paths' => [],
+        'exclude_paths' => [],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Inbound adapter
+    |--------------------------------------------------------------------------
+    | laravel_http: when true, automatically pushes WiretapInboundMiddleware onto
+    |               the global HTTP kernel, capturing all incoming requests and
+    |               responses. Disabled by default — opt-in only.
+    |               (WIRETAP_INBOUND)
+    */
+    'inbound' => [
+        'laravel_http' => env('WIRETAP_INBOUND', false),
+
+        /*
+        | Host filtering for inbound requests.
+        | Matched against the Host header of the incoming request (your app's domain).
+        | Useful for multi-domain / multi-tenant apps, or to limit tracing to a specific
+        | subdomain — e.g. include_hosts: ['webhooks.myapp.com'].
+        | include_hosts: empty = trace all. Non-empty = only these hosts. Supports wildcards.
+        | exclude_hosts: always takes priority over include_hosts. Supports wildcards.
+        */
+        'include_hosts' => [],
+        'exclude_hosts' => [],
+
+        /*
+        | Regex patterns matched against the full inbound URL.
+        | include_paths: empty = trace all paths. Non-empty = only trace matching paths.
+        | exclude_paths: always takes priority over include_paths. Matching requests are skipped.
+        | Example: include_paths: ['#^/webhooks#'], exclude_paths: ['#^/health#']
+        */
+        'include_paths' => [],
+        'exclude_paths' => [],
     ],
 
     /*
@@ -89,25 +141,6 @@ return [
     'store_response_body' => env('WIRETAP_STORE_RESPONSE_BODY', true),
     'max_body_bytes' => env('WIRETAP_MAX_BODY_BYTES', 65_536), // 64 KB; null = unlimited
 
-    /*
-    |--------------------------------------------------------------------------
-    | Host filtering
-    |--------------------------------------------------------------------------
-    | include_hosts: empty = allow all. Non-empty = only log these hosts.
-    | exclude_hosts: always takes priority over include_hosts.
-    | Supports wildcards, e.g. "*.internal.example.com"
-    */
-    'include_hosts' => [],
-    'exclude_hosts' => [],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Path filtering
-    |--------------------------------------------------------------------------
-    | Regex patterns matched against the full URL. Matching URLs are skipped.
-    | Example: ['#/health#', '#/metrics#']
-    */
-    'exclude_paths' => [],
 
     /*
     |--------------------------------------------------------------------------

@@ -53,7 +53,7 @@ it('does not call writer when filter rejects entry', function (): void {
 
     $wiretap = new Wiretap(
         $writer,
-        new TraceFilter(['enabled' => false, 'include_hosts' => [], 'exclude_hosts' => [], 'exclude_paths' => []]),
+        new TraceFilter(['enabled' => false, 'include_hosts' => [], 'exclude_hosts' => [], 'include_paths' => [], 'exclude_paths' => [], 'inbound_include_hosts' => [], 'inbound_exclude_hosts' => [], 'inbound_include_paths' => [], 'inbound_exclude_paths' => []]),
         new TraceRedactor([
             'store_request_body' => true, 'store_response_body' => true, 'max_body_bytes' => null,
             'redact_request_headers' => [], 'redact_response_headers' => [], 'redact_body_keys' => [],
@@ -84,7 +84,7 @@ it('resolves duration from timer in trace()', function (): void {
 
     $wiretap = new Wiretap(
         $writer,
-        new TraceFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'exclude_paths' => []]),
+        new TraceFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'include_paths' => [], 'exclude_paths' => [], 'inbound_include_hosts' => [], 'inbound_exclude_hosts' => [], 'inbound_include_paths' => [], 'inbound_exclude_paths' => []]),
         new TraceRedactor([
             'store_request_body' => true, 'store_response_body' => true, 'max_body_bytes' => null,
             'redact_request_headers' => [], 'redact_response_headers' => [], 'redact_body_keys' => [],
@@ -114,7 +114,7 @@ it('passes traceable through trace() to the written entry', function (): void {
     $traceable = new stdClass;
     $wiretap = new Wiretap(
         $writer,
-        new TraceFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'exclude_paths' => []]),
+        new TraceFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'include_paths' => [], 'exclude_paths' => [], 'inbound_include_hosts' => [], 'inbound_exclude_hosts' => [], 'inbound_include_paths' => [], 'inbound_exclude_paths' => []]),
         new TraceRedactor([
             'store_request_body' => true, 'store_response_body' => true, 'max_body_bytes' => null,
             'redact_request_headers' => [], 'redact_response_headers' => [], 'redact_body_keys' => [],
@@ -184,7 +184,7 @@ it('calls report() when debug is true and the writer throws in capture()', funct
 
     $wiretap = new Wiretap(
         $writer,
-        new TraceFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'exclude_paths' => []]),
+        new TraceFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'include_paths' => [], 'exclude_paths' => [], 'inbound_include_hosts' => [], 'inbound_exclude_hosts' => [], 'inbound_include_paths' => [], 'inbound_exclude_paths' => []]),
         new TraceRedactor([
             'store_request_body' => true, 'store_response_body' => true, 'max_body_bytes' => null,
             'redact_request_headers' => [], 'redact_response_headers' => [], 'redact_body_keys' => [],
@@ -228,7 +228,7 @@ it('calls report() when debug is true and an exception occurs inside trace()', f
 
     $wiretap = new Wiretap(
         $writer,
-        new TraceFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'exclude_paths' => []]),
+        new TraceFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'include_paths' => [], 'exclude_paths' => [], 'inbound_include_hosts' => [], 'inbound_exclude_hosts' => [], 'inbound_include_paths' => [], 'inbound_exclude_paths' => []]),
         new TraceRedactor([
             'store_request_body' => true, 'store_response_body' => true, 'max_body_bytes' => null,
             'redact_request_headers' => [], 'redact_response_headers' => [], 'redact_body_keys' => [],
