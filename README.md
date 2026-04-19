@@ -1,18 +1,18 @@
 # Wiretap
 
-Tap into your app's HTTP traffic. Log, filter, and redact requests with zero boilerplate.
+Tap into your app's HTTP traffic. Filter, redact, and store outbound requests with zero boilerplate.
 
-A robust, highly configurable HTTP traffic logger for Laravel applications and Guzzle HTTP clients. Monitor and store outbound API requests with full visibility into third-party integrations, webhook deliveries, and external service calls.
+A highly configurable HTTP tracing package, built for Laravel. Wiretap automatically captures every outbound request and response — headers, payloads, status codes, and timing — then stores them securely with full control over what gets kept, what gets scrubbed, and where it all ends up. Works with any PHP application via a lightweight `TraceWriter` interface.
 
 ### Key Features
 
-- **Store Options**: Output logs securely to your SQL `database` (default) or redirect them to a structured Laravel `log` file based on configuration.
-- **Automatic Laravel Integration**: Seamlessly attaches to Laravel's HTTP Client (`Illuminate\Support\Facades\Http`).
-- **Native Guzzle Support**: Includes middleware for easily logging raw Guzzle requests.
-- **Advanced Redaction & Security**: Automatically redacts sensitive headers (e.g., API keys, Authorization tokens) and recursively scrubs sensitive JSON payload keys before persisting to the database.
-- **Filtering & Truncation**: Configure maximum payload sizes to preserve database space, and strictly control which requests should be logged.
-- **Eloquent Polymorphism**: Tie HTTP requests directly to Eloquent models using the `withTraceable()` macro and `HasTraces` trait.
-- **Manual Logging Support**: Use the `Wiretap` facade to record traces from custom auto-generated SDKs or vanilla cURL scripts.
+- **Storage Backends**: Persist traces to your SQL `database` (default) or stream them to a structured Laravel `log` channel.
+- **Automatic Laravel Integration**: Zero-config capture of all Laravel HTTP Client requests via event listeners.
+- **Native Guzzle Support**: Drop-in `WiretapClient` wrapper and `WiretapMiddleware` for existing Guzzle stacks.
+- **Advanced Redaction**: Automatically scrubs sensitive headers and recursively redacts JSON payload keys before anything touches storage.
+- **Filtering & Truncation**: Allowlist/denylist hosts, exclude URL patterns, and cap body sizes to keep your storage lean.
+- **Eloquent Polymorphism**: Attach traces to any Eloquent model with `withTraceable()` and `HasTraces` — then query them back in one line.
+- **Manual Tracing**: Use `Wiretap::trace()` to capture requests from raw cURL, custom SDKs, or any HTTP client — with built-in timing and safe exception handling.
 
 ## Requirements
 
