@@ -13,7 +13,7 @@ Wiretap currently supports only outbound HTTP tracing via Laravel HTTP client ev
 | 3. Register middleware in `WiretapServiceProvider` | ✅ Done | Conditionally pushed onto `Kernel` when `wiretap.inbound.laravel_http` is enabled |
 | 4. Per-direction filtering in `TraceFilter` | ✅ Done | `TraceFilter` is fully direction-aware. Outbound uses `outbound.include_hosts`, `exclude_hosts`, `include_paths`, `exclude_paths`. Inbound uses `inbound.*` equivalents. `exclude_paths` takes priority over `include_paths` for both directions. |
 | 5. Per-route traceable binding | ✅ Done | `WiretapTraceableMiddleware` + `wiretap.traceable` alias + `Route::macro('traceable')` fluent shorthand |
-| 6. Fix binary body handling in `TraceRedactor` | ⏳ Pending | `redactBodyKeys()` still falls through for `multipart/form-data` / `application/octet-stream` |
+| 6. Fix binary body handling in `TraceRedactor` | ✅ Done | `processBody()` now nulls out `multipart/form-data` and `application/octet-stream` bodies before redaction. 4 new tests added to `TraceRedactorTest`. |
 | 7. Tests | ✅ Done | `tests/Feature/WiretapInboundTest.php` (6 tests), `tests/Feature/WiretapTraceableMiddlewareTest.php` (5 tests), `TraceFilterTest` expanded with `include_paths` coverage |
 | README & CHANGELOG | ✅ Done | Config table updated, `->traceable()` documented, v2.1.0 changelog entry added |
 

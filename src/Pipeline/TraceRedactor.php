@@ -9,11 +9,12 @@ use Nordkit\Wiretap\HttpExchange;
 /**
  * Redacts sensitive data from an HttpExchange before it is persisted.
  *
- * Steps applied in order:
- *  1. Strip / replace matching request and response headers with "[REDACTED]".
- *  2. Recursively replace matching JSON or form-encoded body keys with "[REDACTED]".
- *  3. Truncate bodies that exceed max_body_bytes.
- *  4. Null out bodies if store_request_body / store_response_body is false.
+     * Steps applied in order:
+     *  1. Strip / replace matching request and response headers with "[REDACTED]".
+     *  2. Null out bodies with binary content types (multipart/form-data, application/octet-stream).
+     *  3. Recursively replace matching JSON or form-encoded body keys with "[REDACTED]".
+     *  4. Truncate bodies that exceed max_body_bytes.
+     *  5. Null out bodies if store_request_body / store_response_body is false.
  */
 class TraceRedactor
 {
@@ -79,6 +80,19 @@ class TraceRedactor
     private function processBody(?string $body, bool $shouldTrace, array $headers): ?string
     {
         if (! $shouldTrace || $body === null) {
+            return null;
+        }
+
+        // Null out binary content types — cannot be meaningfully redacted or stored as text.
+        $contentType = '';
+        foreach ($headers as $k => $v) {
+            if (strtolower($k) === 'content-type') {
+                $contentType = is_array($v) ? $v[0] : $v;
+                break;
+            }
+        }
+
+        if (str_contains($contentType, 'multipart/form-data') || str_contains($contentType, 'application/octet-stream')) {
             return null;
         }
 

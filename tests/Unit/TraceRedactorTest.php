@@ -125,3 +125,36 @@ it('gracefully handles empty form data when attempting to redact', function (): 
     ]));
     expect($entry->requestBody)->toBe('');
 });
+
+it('nulls out multipart/form-data request body', function (): void {
+    $entry = makeRedactionPipeline()->redact(makeRedactionEntry([
+        'requestHeaders' => ['Content-Type' => 'multipart/form-data; boundary=----FormBoundary'],
+        'requestBody' => '------FormBoundary\r\nContent-Disposition: form-data; name="file"\r\n\r\nbinary data',
+    ]));
+    expect($entry->requestBody)->toBeNull();
+});
+
+it('nulls out application/octet-stream request body', function (): void {
+    $entry = makeRedactionPipeline()->redact(makeRedactionEntry([
+        'requestHeaders' => ['Content-Type' => 'application/octet-stream'],
+        'requestBody' => "\x89PNG\r\n\x1a\n binary image data",
+    ]));
+    expect($entry->requestBody)->toBeNull();
+});
+
+it('nulls out multipart/form-data response body', function (): void {
+    $entry = makeRedactionPipeline()->redact(makeRedactionEntry([
+        'responseHeaders' => ['Content-Type' => 'multipart/form-data; boundary=abc'],
+        'responseBody' => 'binary response',
+    ]));
+    expect($entry->responseBody)->toBeNull();
+});
+
+it('nulls out application/octet-stream response body', function (): void {
+    $entry = makeRedactionPipeline()->redact(makeRedactionEntry([
+        'responseHeaders' => ['Content-Type' => 'application/octet-stream'],
+        'responseBody' => "\x00\x01\x02 binary",
+    ]));
+    expect($entry->responseBody)->toBeNull();
+});
+
