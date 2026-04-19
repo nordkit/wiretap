@@ -11,11 +11,11 @@ use Illuminate\Http\Client\Request;
 use Illuminate\Http\Client\Response;
 use Nordkit\Wiretap\Contracts\TraceWriter;
 use Nordkit\Wiretap\HttpExchange;
-use Nordkit\Wiretap\Pipeline\TraceFilter;
-use Nordkit\Wiretap\Pipeline\TraceRedactor;
 use Nordkit\Wiretap\Laravel\Listeners\RecordFailedConnection;
 use Nordkit\Wiretap\Laravel\Listeners\RecordOutboundRequest;
 use Nordkit\Wiretap\Laravel\TraceableScope;
+use Nordkit\Wiretap\Pipeline\TraceFilter;
+use Nordkit\Wiretap\Pipeline\TraceRedactor;
 use Nordkit\Wiretap\Wiretap;
 
 /**

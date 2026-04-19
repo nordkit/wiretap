@@ -7,10 +7,10 @@ use Illuminate\Foundation\Exceptions\Handler;
 use Nordkit\Wiretap\Contracts\TraceWriter;
 use Nordkit\Wiretap\HttpDirection;
 use Nordkit\Wiretap\HttpExchange;
-use Nordkit\Wiretap\Pipeline\TraceFilter;
-use Nordkit\Wiretap\Pipeline\TraceRedactor;
 use Nordkit\Wiretap\Laravel\TraceableScope;
 use Nordkit\Wiretap\Laravel\Writers\LogWriter;
+use Nordkit\Wiretap\Pipeline\TraceFilter;
+use Nordkit\Wiretap\Pipeline\TraceRedactor;
 use Nordkit\Wiretap\Wiretap;
 
 it('resolves Wiretap from the container', function (): void {

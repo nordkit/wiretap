@@ -12,13 +12,13 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\ServiceProvider;
 use Nordkit\Wiretap\Contracts\TraceWriter;
 use Nordkit\Wiretap\Guzzle\WiretapClient;
-use Nordkit\Wiretap\Pipeline\TraceFilter;
-use Nordkit\Wiretap\Pipeline\TraceRedactor;
 use Nordkit\Wiretap\Laravel\Listeners\RecordFailedConnection;
 use Nordkit\Wiretap\Laravel\Listeners\RecordOutboundRequest;
 use Nordkit\Wiretap\Laravel\Models\Trace;
 use Nordkit\Wiretap\Laravel\Writers\DatabaseWriter;
 use Nordkit\Wiretap\Laravel\Writers\LogWriter;
+use Nordkit\Wiretap\Pipeline\TraceFilter;
+use Nordkit\Wiretap\Pipeline\TraceRedactor;
 use Nordkit\Wiretap\Wiretap;
 
 class WiretapServiceProvider extends ServiceProvider
