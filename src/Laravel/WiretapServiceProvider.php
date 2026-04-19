@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nordkit\Wiretap\Laravel;
 
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Http\Client\Events\ConnectionFailed;
 use Illuminate\Http\Client\Events\ResponseReceived;
@@ -14,6 +15,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\ServiceProvider;
 use Nordkit\Wiretap\Contracts\TraceWriter;
 use Nordkit\Wiretap\Guzzle\WiretapClient;
+use Nordkit\Wiretap\Laravel\Commands\PruneTracesCommand;
 use Nordkit\Wiretap\Laravel\Listeners\RecordFailedConnection;
 use Nordkit\Wiretap\Laravel\Listeners\RecordOutboundRequest;
 use Nordkit\Wiretap\Laravel\Middleware\WiretapInboundMiddleware;
@@ -110,6 +112,8 @@ class WiretapServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__.'/../../database/migrations/' => database_path('migrations'),
             ], 'wiretap-migrations');
+
+            $this->commands([PruneTracesCommand::class]);
         }
 
         $this->loadMigrationsFrom(__DIR__.'/../../database/migrations');
@@ -136,5 +140,11 @@ class WiretapServiceProvider extends ServiceProvider
             /** @var Route $this */
             return $this->middleware('wiretap.traceable:'.$traceableClass);
         });
+
+        if ($this->app['config']['wiretap.pruning.enabled'] && $this->app['config']['wiretap.driver'] === 'database') {
+            $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
+                $schedule->command(PruneTracesCommand::class)->daily();
+            });
+        }
     }
 }

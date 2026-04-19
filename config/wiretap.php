@@ -134,7 +134,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Body capture
+    | Pruning
+    |--------------------------------------------------------------------------
+    | When enabled, `php artisan wiretap:prune` is automatically scheduled daily
+    | by the service provider — no manual scheduler entry required.
+    | Run it manually at any time: php artisan wiretap:prune --days=30
+    |
+    | Note: pruning only applies to the 'database' driver. It has no effect
+    | when wiretap.driver is set to 'log'.
+    */
+
+    'pruning' => [
+        'enabled' => env('WIRETAP_PRUNING_ENABLED', false),
+        'keep_days' => env('WIRETAP_PRUNING_KEEP_DAYS', 90),
+    ],
+
+    /*
     |--------------------------------------------------------------------------
     | store_request_body / store_response_body: set to false to always discard
     |   the body, regardless of content type (e.g. for privacy or storage reasons).

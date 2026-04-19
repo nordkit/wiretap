@@ -104,6 +104,27 @@ Every option in `config/wiretap.php` is documented with an inline comment. The m
 - **`store_request_body` / `store_response_body`** — toggle body capture. Binary content types (`image/*`, `video/*`, `audio/*`, `multipart/form-data`, `application/octet-stream`, `application/pdf`, `application/zip`) are never stored as raw bytes — instead a `[binary: filename.ext]` placeholder is stored, with the filename extracted from `Content-Disposition` where available.
 - **`max_body_bytes`** — caps stored body size to 64 KB by default. Set to `null` for unlimited.
 - **`redact_request_headers` / `redact_response_headers` / `redact_body_keys`** — lists of headers and JSON keys to scrub before anything reaches storage.
+- **`pruning.*`** — automatic deletion of old traces via `php artisan wiretap:prune`. Disabled by default, only applies to the `database` driver.
+
+### Pruning old traces
+
+Traces accumulate quickly. Enable automatic pruning by setting:
+
+```dotenv
+WIRETAP_PRUNING_ENABLED=true
+WIRETAP_PRUNING_KEEP_DAYS=90   # default: 90 days
+```
+
+When `WIRETAP_PRUNING_ENABLED=true` and `wiretap.driver` is `database`, Wiretap automatically registers a daily schedule for `wiretap:prune` — no entry in your scheduler is required.
+
+You can also run it on demand or with a custom retention window:
+
+```bash
+php artisan wiretap:prune
+php artisan wiretap:prune --days=30
+```
+
+> **Note:** Pruning only applies to the `database` driver. Running `wiretap:prune` when `wiretap.driver` is `log` will print a warning and exit cleanly.
 
 ### Laravel Integration
 

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-04-19
+
+### Added
+- **`wiretap:prune` Artisan command** — dedicated command to delete traces older than the configured retention window. Accepts an optional `--days` flag to override the configured value at runtime. Prints a warning and exits cleanly when `wiretap.driver` is not `database`.
+- Automatic daily scheduling of `wiretap:prune` via the service provider when `pruning.enabled` is `true` and `wiretap.driver` is `database` — no entry in the application scheduler required.
+- `pruning.enabled` config key (`WIRETAP_PRUNING_ENABLED`, default `false`).
+- `pruning.keep_days` config key (`WIRETAP_PRUNING_KEEP_DAYS`, default `90`).
+
 ## [2.1.1] - 2026-04-19
 
 ### Fixed
@@ -114,7 +122,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `LoggingMiddleware` for raw Guzzle `HandlerStack` integration.
 - `Wiretap` facade with `log()`, `record()`, and `startTimer()` methods.
 
-[Unreleased]: https://github.com/nordkit/wiretap/compare/v2.1.1...HEAD
+[Unreleased]: https://github.com/nordkit/wiretap/compare/v2.2.0...HEAD
+[2.2.0]: https://github.com/nordkit/wiretap/compare/v2.1.1...v2.2.0
 [2.1.1]: https://github.com/nordkit/wiretap/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/nordkit/wiretap/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/nordkit/wiretap/compare/v1.2.3...v2.0.0
