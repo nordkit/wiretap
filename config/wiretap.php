@@ -1,8 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
-use Nordkit\Wiretap\Laravel\Models\HttpLog;
 
 return [
     /*
@@ -36,7 +33,7 @@ return [
     | Override to use a custom HttpLog model (e.g. to add casts, scopes, or a
     | different table name).
     */
-    'model' => HttpLog::class,
+    'model' => 'Nordkit\Wiretap\Laravel\Models\HttpLog',
 
     /*
     |--------------------------------------------------------------------------
