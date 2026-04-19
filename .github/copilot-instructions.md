@@ -29,6 +29,7 @@
 ## Git
 
 - Always use `git --no-pager` to prevent output from being blocked by a pager (e.g. `git --no-pager log`, `git --no-pager diff`)
+- Always run `composer lint` (Pint) and `composer test` (Pest) before committing — fix any errors before proceeding
 - Commit messages use the [Conventional Commits](https://www.conventionalcommits.org) format (e.g. `fix:`, `feat:`, `chore:`)
 - Push directly to `main` for release preparation commits; use PRs for feature work
 
@@ -42,5 +43,6 @@
 | `TraceRedactor` | Pipeline step — scrubs sensitive data from an exchange |
 | `TraceWriter` | Interface — persists an exchange (database, log, custom) |
 | `WriteTraceJob` | Queued job that writes an exchange via Eloquent |
+
 
 
