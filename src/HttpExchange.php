@@ -87,6 +87,6 @@ final readonly class HttpExchange
             $this->traceable = null;
         };
 
-        $init->bindTo($this, static::class)($data);
+        $init->bindTo($this, self::class)($data);
     }
 }

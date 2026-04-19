@@ -175,4 +175,3 @@ it('can be serialized and unserialized without errors (enum roundtrip)', functio
         ->and($restored->traceableType)->toBe('order')
         ->and($restored->traceableId)->toBe('99');
 });
-
