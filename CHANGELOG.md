@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-04-19
+
+### Fixed
+- Replaced `use` import with a fully-qualified class reference in `config/wiretap.php` to eliminate "undefined class" errors in IDEs and static analysis tools.
+
 ## [1.2.0] - 2026-04-19
 
 ### Changed
@@ -32,7 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `LoggingMiddleware` for raw Guzzle `HandlerStack` integration.
 - `Wiretap` facade with `log()`, `record()`, and `startTimer()` methods.
 
-[Unreleased]: https://github.com/nordkit/wiretap/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/nordkit/wiretap/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/nordkit/wiretap/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/nordkit/wiretap/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/nordkit/wiretap/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/nordkit/wiretap/releases/tag/v1.0.0
