@@ -10,12 +10,12 @@ use GuzzleHttp\Psr7\NoSeekStream;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\Psr7\Utils;
-use Nordkit\Wiretap\Contracts\HttpLogWriter;
+use Nordkit\Wiretap\Contracts\TraceWriter;
 use Nordkit\Wiretap\Guzzle\WiretapMiddleware;
 use Nordkit\Wiretap\HttpDirection;
-use Nordkit\Wiretap\HttpLogEntry;
-use Nordkit\Wiretap\HttpLogFilter;
-use Nordkit\Wiretap\HttpLogRedactor;
+use Nordkit\Wiretap\HttpExchange;
+use Nordkit\Wiretap\Pipeline\TraceFilter;
+use Nordkit\Wiretap\Pipeline\TraceRedactor;
 use Nordkit\Wiretap\Wiretap;
 
 /**
@@ -24,11 +24,11 @@ use Nordkit\Wiretap\Wiretap;
 function makeGuzzleCapturingWiretap(): array
 {
     $calls = new ArrayObject;
-    $writer = new class($calls) implements HttpLogWriter
+    $writer = new class($calls) implements TraceWriter
     {
         public function __construct(private readonly ArrayObject $calls) {}
 
-        public function write(HttpLogEntry $entry): void
+        public function write(HttpExchange $entry): void
         {
             $this->calls->append($entry);
         }
@@ -36,9 +36,9 @@ function makeGuzzleCapturingWiretap(): array
 
     $wiretap = new Wiretap(
         $writer,
-        new HttpLogFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'exclude_paths' => []]),
-        new HttpLogRedactor([
-            'log_request_body' => true, 'log_response_body' => true, 'max_body_bytes' => null,
+        new TraceFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'exclude_paths' => []]),
+        new TraceRedactor([
+            'store_request_body' => true, 'store_response_body' => true, 'max_body_bytes' => null,
             'redact_request_headers' => [], 'redact_response_headers' => [], 'redact_body_keys' => [],
             'redact_string' => '[REDACTED]',
         ]),

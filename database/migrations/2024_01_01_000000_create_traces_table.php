@@ -9,7 +9,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('http_logs', function (Blueprint $table): void {
+        Schema::create('traces', function (Blueprint $table): void {
             $table->ulid('id')->primary();
             $table->string('direction', 10);
             $table->string('driver', 20);
@@ -22,15 +22,15 @@ return new class extends Migration
             $table->longText('response_body')->nullable();
             $table->unsignedInteger('duration_ms');
             $table->text('error_message')->nullable();
-            $table->nullableUlidMorphs('loggable');
+            $table->nullableUlidMorphs('traceable');
             $table->timestamp('created_at')->useCurrent();
 
-            $table->index(['loggable_type', 'loggable_id', 'created_at']);
+            $table->index(['traceable_type', 'traceable_id', 'created_at']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('http_logs');
+        Schema::dropIfExists('traces');
     }
 };

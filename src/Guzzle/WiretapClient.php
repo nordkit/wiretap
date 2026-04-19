@@ -18,15 +18,15 @@ use Psr\Http\Message\UriInterface;
  * Usage (injected via the container):
  *   public function __construct(private readonly WiretapClient $http) {}
  *
- * Attach a loggable model for polymorphic association:
- *   $this->http->withLoggable($order)->post('https://api.example.com/sync', [...]);
+ * Attach a traceable model for polymorphic association:
+ *   $this->http->withTraceable($order)->post('https://api.example.com/sync', [...]);
  *
- * Note: withLoggable() is designed for sequential requests. It is consumed (reset to null)
- * after the next request is dispatched, matching the behavior of Http::withLoggable().
+ * Note: withTraceable() is designed for sequential requests. It is consumed (reset to null)
+ * after the next request is dispatched, matching the behavior of Http::withTraceable().
  */
 class WiretapClient
 {
-    private ?object $loggable = null;
+    private ?object $traceable = null;
 
     private readonly Client $client;
 
@@ -39,7 +39,7 @@ class WiretapClient
             ? $config['handler']
             : HandlerStack::create($config['handler'] ?? null);
 
-        $stack->push(WiretapMiddleware::make($this->wiretap, fn (): ?object => $this->consumeLoggable()));
+        $stack->push(WiretapMiddleware::make($this->wiretap, fn (): ?object => $this->consumeTraceable()));
 
         $this->client = new Client(array_merge($config, ['handler' => $stack]));
     }
@@ -56,11 +56,11 @@ class WiretapClient
 
     /**
      * Associate an Eloquent model (or any object) with the next request log entry.
-     * The loggable is consumed after the request is dispatched.
+     * The traceable is consumed after the request is dispatched.
      */
-    public function withLoggable(object $loggable): static
+    public function withTraceable(object $traceable): static
     {
-        $this->loggable = $loggable;
+        $this->traceable = $traceable;
 
         return $this;
     }
@@ -148,14 +148,14 @@ class WiretapClient
     }
 
     /**
-     * Return the pending loggable and reset it to null, ensuring it is attached
+     * Return the pending traceable and reset it to null, ensuring it is attached
      * to exactly one request before being cleared.
      */
-    private function consumeLoggable(): ?object
+    private function consumeTraceable(): ?object
     {
-        $loggable = $this->loggable;
-        $this->loggable = null;
+        $traceable = $this->traceable;
+        $this->traceable = null;
 
-        return $loggable;
+        return $traceable;
     }
 }

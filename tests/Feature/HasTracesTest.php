@@ -6,10 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use Nordkit\Wiretap\HttpDirection;
-use Nordkit\Wiretap\HttpLogEntry;
-use Nordkit\Wiretap\Laravel\Concerns\HasHttpLogs;
-use Nordkit\Wiretap\Laravel\Jobs\WriteHttpLogJob;
-use Nordkit\Wiretap\Laravel\Models\HttpLog;
+use Nordkit\Wiretap\HttpExchange;
+use Nordkit\Wiretap\Laravel\Concerns\HasTraces;
+use Nordkit\Wiretap\Laravel\Jobs\WriteTraceJob;
+use Nordkit\Wiretap\Laravel\Models\Trace;
 
 uses(RefreshDatabase::class);
 
@@ -25,7 +25,7 @@ beforeEach(function (): void {
  */
 class FakeOrder extends Model
 {
-    use HasHttpLogs;
+    use HasTraces;
 
     protected $table = 'fake_orders';
 
@@ -36,59 +36,59 @@ class FakeOrder extends Model
     protected $guarded = [];
 }
 
-it('httpLogs() relation returns associated logs', function (): void {
+it('traces() relation returns associated traces', function (): void {
     $order = FakeOrder::create(['id' => '01HXYZ0000000000000000AAAA']);
 
-    app()->call([new WriteHttpLogJob(new HttpLogEntry(
+    app()->call([new WriteTraceJob(new HttpExchange(
         direction: HttpDirection::Outbound, driver: 'test',
         url: 'https://api.example.com/orders', method: 'POST',
         requestHeaders: [], requestBody: null, responseStatus: 200,
         responseHeaders: [], responseBody: null, durationMs: 5,
-        loggable: $order,
+        traceable: $order,
     ), $order->getMorphClass(), (string) $order->getKey()), 'handle']);
 
-    $logs = $order->httpLogs;
+    $logs = $order->traces;
 
     expect($logs)->toHaveCount(1)
-        ->and($logs->first())->toBeInstanceOf(HttpLog::class)
+        ->and($logs->first())->toBeInstanceOf(Trace::class)
         ->and($logs->first()->url)->toBe('https://api.example.com/orders');
 });
 
-it('httpLogs() relation is empty when no logs exist', function (): void {
+it('traces() relation is empty when no traces exist', function (): void {
     $order = FakeOrder::create(['id' => '01HXYZ0000000000000000BBBB']);
 
-    expect($order->httpLogs)->toBeEmpty();
+    expect($order->traces)->toBeEmpty();
 });
 
-it('loggable() morphTo relation loads the parent model', function (): void {
+it('traceable() morphTo relation loads the parent model', function (): void {
     $order = FakeOrder::create(['id' => '01HXYZ0000000000000000CCCC']);
 
-    app()->call([new WriteHttpLogJob(new HttpLogEntry(
+    app()->call([new WriteTraceJob(new HttpExchange(
         direction: HttpDirection::Outbound, driver: 'test',
         url: 'https://api.example.com', method: 'GET',
         requestHeaders: [], requestBody: null, responseStatus: 200,
         responseHeaders: [], responseBody: null, durationMs: 1,
-        loggable: $order,
+        traceable: $order,
     ), $order->getMorphClass(), (string) $order->getKey()), 'handle']);
 
-    $log = HttpLog::query()->first();
+    $log = Trace::query()->first();
 
-    expect($log->loggable)->toBeInstanceOf(FakeOrder::class)
-        ->and($log->loggable->id)->toBe($order->id);
+    expect($log->traceable)->toBeInstanceOf(FakeOrder::class)
+        ->and($log->traceable->id)->toBe($order->id);
 });
 
-it('httpLogs() uses a custom model class from config', function (): void {
+it('traces() uses a custom model class from config', function (): void {
     // Override the model binding to a subclass
-    $customModel = new class extends HttpLog
+    $customModel = new class extends Trace
     {
-        protected $table = 'http_logs';
+        protected $table = 'traces';
     };
 
     config(['wiretap.model' => get_class($customModel)]);
 
     $order = FakeOrder::create(['id' => '01HXYZ0000000000000000DDDD']);
 
-    $relation = $order->httpLogs();
+    $relation = $order->traces();
 
     // The relation's related model must be the custom class
     expect($relation->getRelated())->toBeInstanceOf(get_class($customModel));

@@ -23,18 +23,18 @@ use Nordkit\Wiretap\HttpDirection;
  * @property string|null $response_body
  * @property int $duration_ms
  * @property string|null $error_message
- * @property string|null $loggable_type
- * @property string|null $loggable_id
+ * @property string|null $traceable_type
+ * @property string|null $traceable_id
  * @property Carbon|null $created_at
  */
-class HttpLog extends Model
+class Trace extends Model
 {
     use HasUlids;
 
     public const UPDATED_AT = null;
 
     /** @var string */
-    protected $table = 'http_logs';
+    protected $table = 'traces';
 
     /** @var list<string> */
     protected $fillable = [
@@ -49,8 +49,8 @@ class HttpLog extends Model
         'response_body',
         'duration_ms',
         'error_message',
-        'loggable_type',
-        'loggable_id',
+        'traceable_type',
+        'traceable_id',
     ];
 
     /** @return array<string, string> */
@@ -66,11 +66,11 @@ class HttpLog extends Model
     }
 
     /**
-     * Get the parent loggable model (polymorphic relation).
+     * Get the parent traceable model (polymorphic relation).
      *
      * @return MorphTo<Model, $this>
      */
-    public function loggable(): MorphTo
+    public function traceable(): MorphTo
     {
         return $this->morphTo();
     }

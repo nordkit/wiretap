@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Log;
 use Nordkit\Wiretap\HttpDirection;
-use Nordkit\Wiretap\HttpLogEntry;
+use Nordkit\Wiretap\HttpExchange;
 use Nordkit\Wiretap\Laravel\Writers\LogWriter;
 
-function makeLogEntry(array $overrides = []): HttpLogEntry
+function makeLogEntry(array $overrides = []): HttpExchange
 {
-    return new HttpLogEntry(
+    return new HttpExchange(
         direction      : HttpDirection::Outbound,
         driver         : 'test',
         url            : $overrides['url'] ?? 'https://api.example.com/orders',
@@ -38,11 +38,11 @@ it('writes to the configured named channel', function (): void {
     (new LogWriter('slack'))->write(makeLogEntry());
 });
 
-it('formats the log message as "HTTP {METHOD} {URL}"', function (): void {
+it('formats the log message as "Wiretap: {METHOD} {URL}"', function (): void {
     Log::shouldReceive('channel')->andReturnSelf();
     Log::shouldReceive('info')
         ->once()
-        ->withArgs(fn (string $message) => $message === 'HTTP Log: POST https://api.example.com/orders');
+        ->withArgs(fn (string $message) => $message === 'Wiretap: POST https://api.example.com/orders');
 
     (new LogWriter)->write(makeLogEntry());
 });

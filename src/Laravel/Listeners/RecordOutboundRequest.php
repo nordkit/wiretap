@@ -7,12 +7,12 @@ namespace Nordkit\Wiretap\Laravel\Listeners;
 use Illuminate\Http\Client\Events\ResponseReceived;
 use Nordkit\Wiretap\Concerns\FlattensHeaders;
 use Nordkit\Wiretap\HttpDirection;
-use Nordkit\Wiretap\HttpLogEntry;
-use Nordkit\Wiretap\Laravel\LoggableScope;
+use Nordkit\Wiretap\HttpExchange;
+use Nordkit\Wiretap\Laravel\TraceableScope;
 use Nordkit\Wiretap\Wiretap;
 
 /**
- * Listens to the Laravel HTTP client ResponseReceived event and records a log entry.
+ * Listens to the Laravel HTTP client ResponseReceived event and records a trace.
  */
 class RecordOutboundRequest
 {
@@ -20,7 +20,7 @@ class RecordOutboundRequest
 
     public function __construct(
         private readonly Wiretap $wiretap,
-        private readonly LoggableScope $loggableContext,
+        private readonly TraceableScope $traceableContext,
     ) {}
 
     public function handle(ResponseReceived $event): void
@@ -31,7 +31,7 @@ class RecordOutboundRequest
         $durationMs = $transferStats !== null
             ? (int) round($transferStats->getTransferTime() * 1000)
             : 0;
-        $entry = new HttpLogEntry(
+        $entry = new HttpExchange(
             direction      : HttpDirection::Outbound,
             driver         : 'laravel-http',
             url            : (string) $request->url(),
@@ -43,8 +43,8 @@ class RecordOutboundRequest
             responseBody   : $response->body() !== '' ? $response->body() : null,
             durationMs     : $durationMs,
             errorMessage   : null,
-            loggable       : $this->loggableContext->pull(),
+            traceable       : $this->traceableContext->pull(),
         );
-        $this->wiretap->record($entry);
+        $this->wiretap->capture($entry);
     }
 }

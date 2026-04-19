@@ -3,14 +3,14 @@
 declare(strict_types=1);
 
 use Nordkit\Wiretap\HttpDirection;
-use Nordkit\Wiretap\HttpLogEntry;
-use Nordkit\Wiretap\HttpLogRedactor;
+use Nordkit\Wiretap\HttpExchange;
+use Nordkit\Wiretap\Pipeline\TraceRedactor;
 
-function makeRedactionPipeline(array $overrides = []): HttpLogRedactor
+function makeRedactionPipeline(array $overrides = []): TraceRedactor
 {
-    return new HttpLogRedactor(array_merge([
-        'log_request_body' => true,
-        'log_response_body' => true,
+    return new TraceRedactor(array_merge([
+        'store_request_body' => true,
+        'store_response_body' => true,
         'max_body_bytes' => 1000,
         'redact_request_headers' => ['Authorization'],
         'redact_response_headers' => ['Set-Cookie'],
@@ -19,9 +19,9 @@ function makeRedactionPipeline(array $overrides = []): HttpLogRedactor
     ], $overrides));
 }
 
-function makeRedactionEntry(array $overrides = []): HttpLogEntry
+function makeRedactionEntry(array $overrides = []): HttpExchange
 {
-    return new HttpLogEntry(...array_merge([
+    return new HttpExchange(...array_merge([
         'direction' => HttpDirection::Outbound,
         'driver' => 'test',
         'url' => 'https://api.example.com',
@@ -48,8 +48,8 @@ it('redacts body keys recursively', function (): void {
     expect($body['password'])->toBe('[REDACTED]');
     expect($body['amount'])->toBe(100);
 });
-it('nulls body when log_request_body is false', function (): void {
-    $entry = makeRedactionPipeline(['log_request_body' => false])->redact(makeRedactionEntry());
+it('nulls body when store_request_body is false', function (): void {
+    $entry = makeRedactionPipeline(['store_request_body' => false])->redact(makeRedactionEntry());
     expect($entry->requestBody)->toBeNull();
 });
 it('truncates body exceeding max_body_bytes', function (): void {

@@ -7,11 +7,11 @@ namespace Nordkit\Wiretap\Laravel\Listeners;
 use Illuminate\Http\Client\Events\ConnectionFailed;
 use Nordkit\Wiretap\Concerns\FlattensHeaders;
 use Nordkit\Wiretap\HttpDirection;
-use Nordkit\Wiretap\HttpLogEntry;
+use Nordkit\Wiretap\HttpExchange;
 use Nordkit\Wiretap\Wiretap;
 
 /**
- * Listens to the Laravel HTTP client ConnectionFailed event and records an error log entry.
+ * Listens to the Laravel HTTP client ConnectionFailed event and records an error trace.
  */
 class RecordFailedConnection
 {
@@ -22,7 +22,7 @@ class RecordFailedConnection
     public function handle(ConnectionFailed $event): void
     {
         $request = $event->request;
-        $entry = new HttpLogEntry(
+        $entry = new HttpExchange(
             direction      : HttpDirection::Outbound,
             driver         : 'laravel-http',
             url            : (string) $request->url(),
@@ -35,6 +35,6 @@ class RecordFailedConnection
             durationMs     : 0,
             errorMessage   : $event->exception->getMessage(),
         );
-        $this->wiretap->record($entry);
+        $this->wiretap->capture($entry);
     }
 }

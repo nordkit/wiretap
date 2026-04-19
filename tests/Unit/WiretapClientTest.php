@@ -7,12 +7,12 @@ use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
-use Nordkit\Wiretap\Contracts\HttpLogWriter;
+use Nordkit\Wiretap\Contracts\TraceWriter;
 use Nordkit\Wiretap\Guzzle\WiretapClient;
 use Nordkit\Wiretap\HttpDirection;
-use Nordkit\Wiretap\HttpLogEntry;
-use Nordkit\Wiretap\HttpLogFilter;
-use Nordkit\Wiretap\HttpLogRedactor;
+use Nordkit\Wiretap\HttpExchange;
+use Nordkit\Wiretap\Pipeline\TraceFilter;
+use Nordkit\Wiretap\Pipeline\TraceRedactor;
 use Nordkit\Wiretap\Wiretap;
 
 /**
@@ -21,11 +21,11 @@ use Nordkit\Wiretap\Wiretap;
 function makeWiretapClient(array $responses = []): array
 {
     $calls = new ArrayObject;
-    $writer = new class($calls) implements HttpLogWriter
+    $writer = new class($calls) implements TraceWriter
     {
         public function __construct(private readonly ArrayObject $calls) {}
 
-        public function write(HttpLogEntry $entry): void
+        public function write(HttpExchange $entry): void
         {
             $this->calls->append($entry);
         }
@@ -33,9 +33,9 @@ function makeWiretapClient(array $responses = []): array
 
     $wiretap = new Wiretap(
         $writer,
-        new HttpLogFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'exclude_paths' => []]),
-        new HttpLogRedactor([
-            'log_request_body' => true, 'log_response_body' => true, 'max_body_bytes' => null,
+        new TraceFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'exclude_paths' => []]),
+        new TraceRedactor([
+            'store_request_body' => true, 'store_response_body' => true, 'max_body_bytes' => null,
             'redact_request_headers' => [], 'redact_response_headers' => [], 'redact_body_keys' => [],
             'redact_string' => '[REDACTED]',
         ]),
@@ -63,7 +63,7 @@ it('logs successful HTTP requests automatically', function (string $method): voi
         ->and($calls[0]->responseBody)->toBe('{"ok":true}')
         ->and($calls[0]->direction)->toBe(HttpDirection::Outbound)
         ->and($calls[0]->driver)->toBe('guzzle')
-        ->and($calls[0]->loggable)->toBeNull();
+        ->and($calls[0]->traceable)->toBeNull();
 })->with(['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD']);
 
 it('logs a POST request with request body', function (): void {
@@ -78,31 +78,31 @@ it('logs a POST request with request body', function (): void {
         ->and($calls[0]->responseStatus)->toBe(201);
 });
 
-it('attaches a loggable model via withLoggable()', function (): void {
+it('attaches a traceable model via withTraceable()', function (): void {
     [$client, $calls] = makeWiretapClient([
         new Response(200, [], '{"synced":true}'),
     ]);
 
     $order = new stdClass;
-    $client->withLoggable($order)->post('https://api.example.com/sync');
+    $client->withTraceable($order)->post('https://api.example.com/sync');
 
     expect($calls)->toHaveCount(1)
-        ->and($calls[0]->loggable)->toBe($order);
+        ->and($calls[0]->traceable)->toBe($order);
 });
 
-it('consumes the loggable after the request so the next request has no loggable', function (): void {
+it('consumes the traceable after the request so the next request has no traceable', function (): void {
     [$client, $calls] = makeWiretapClient([
         new Response(200, [], 'first'),
         new Response(200, [], 'second'),
     ]);
 
     $order = new stdClass;
-    $client->withLoggable($order)->get('https://api.example.com/first');
+    $client->withTraceable($order)->get('https://api.example.com/first');
     $client->get('https://api.example.com/second');
 
     expect($calls)->toHaveCount(2)
-        ->and($calls[0]->loggable)->toBe($order)
-        ->and($calls[1]->loggable)->toBeNull();
+        ->and($calls[0]->traceable)->toBe($order)
+        ->and($calls[1]->traceable)->toBeNull();
 });
 
 it('logs a failed connection with errorMessage and re-throws', function (): void {
@@ -118,7 +118,7 @@ it('logs a failed connection with errorMessage and re-throws', function (): void
         ->and($calls[0]->errorMessage)->toBe('Connection refused');
 });
 
-it('preserves the loggable on failed requests', function (): void {
+it('preserves the traceable on failed requests', function (): void {
     [$client, $calls] = makeWiretapClient([
         new ConnectException('Timeout', new Request('POST', 'https://api.example.com/fail')),
     ]);
@@ -126,13 +126,13 @@ it('preserves the loggable on failed requests', function (): void {
     $order = new stdClass;
 
     try {
-        $client->withLoggable($order)->post('https://api.example.com/fail');
+        $client->withTraceable($order)->post('https://api.example.com/fail');
     } catch (ConnectException) {
         // expected
     }
 
     expect($calls)->toHaveCount(1)
-        ->and($calls[0]->loggable)->toBe($order);
+        ->and($calls[0]->traceable)->toBe($order);
 });
 
 it('preserves response body readability after logging', function (): void {

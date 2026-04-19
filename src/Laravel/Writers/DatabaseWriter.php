@@ -5,29 +5,29 @@ declare(strict_types=1);
 namespace Nordkit\Wiretap\Laravel\Writers;
 
 use Illuminate\Database\Eloquent\Model;
-use Nordkit\Wiretap\Contracts\HttpLogWriter;
-use Nordkit\Wiretap\HttpLogEntry;
-use Nordkit\Wiretap\Laravel\Jobs\WriteHttpLogJob;
+use Nordkit\Wiretap\Contracts\TraceWriter;
+use Nordkit\Wiretap\HttpExchange;
+use Nordkit\Wiretap\Laravel\Jobs\WriteTraceJob;
 
 /**
  * Default writer: dispatches a queued job to write the log entry via Eloquent.
  */
-class EloquentWriter implements HttpLogWriter
+class DatabaseWriter implements TraceWriter
 {
     /** @param array{enabled: bool, connection: string|null, name: string} $queueConfig */
     public function __construct(private readonly array $queueConfig) {}
 
-    public function write(HttpLogEntry $entry): void
+    public function write(HttpExchange $entry): void
     {
-        $loggableType = null;
-        $loggableId = null;
+        $traceableType = null;
+        $traceableId = null;
 
-        if ($entry->loggable instanceof Model) {
-            $loggableType = $entry->loggable->getMorphClass();
-            $loggableId = (string) $entry->loggable->getKey();
+        if ($entry->traceable instanceof Model) {
+            $traceableType = $entry->traceable->getMorphClass();
+            $traceableId = (string) $entry->traceable->getKey();
         }
 
-        $job = new WriteHttpLogJob($entry, $loggableType, $loggableId);
+        $job = new WriteTraceJob($entry, $traceableType, $traceableId);
 
         if ($this->queueConfig['enabled']) {
             $job->onConnection($this->queueConfig['connection'])

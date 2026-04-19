@@ -4,48 +4,48 @@ declare(strict_types=1);
 
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Foundation\Exceptions\Handler;
-use Nordkit\Wiretap\Contracts\HttpLogWriter;
+use Nordkit\Wiretap\Contracts\TraceWriter;
 use Nordkit\Wiretap\HttpDirection;
-use Nordkit\Wiretap\HttpLogEntry;
-use Nordkit\Wiretap\HttpLogFilter;
-use Nordkit\Wiretap\HttpLogRedactor;
-use Nordkit\Wiretap\Laravel\LoggableScope;
+use Nordkit\Wiretap\HttpExchange;
+use Nordkit\Wiretap\Laravel\TraceableScope;
 use Nordkit\Wiretap\Laravel\Writers\LogWriter;
+use Nordkit\Wiretap\Pipeline\TraceFilter;
+use Nordkit\Wiretap\Pipeline\TraceRedactor;
 use Nordkit\Wiretap\Wiretap;
 
 it('resolves Wiretap from the container', function (): void {
     expect($this->app->make(Wiretap::class))->toBeInstanceOf(Wiretap::class);
 });
 
-it('resolves HttpLogWriter singleton', function (): void {
-    $a = $this->app->make(HttpLogWriter::class);
-    $b = $this->app->make(HttpLogWriter::class);
+it('resolves TraceWriter singleton', function (): void {
+    $a = $this->app->make(TraceWriter::class);
+    $b = $this->app->make(TraceWriter::class);
 
-    expect($a)->toBeInstanceOf(HttpLogWriter::class)->and($a)->toBe($b);
+    expect($a)->toBeInstanceOf(TraceWriter::class)->and($a)->toBe($b);
 });
 
-it('resolves HttpLogFilter singleton', function (): void {
-    expect($this->app->make(HttpLogFilter::class))->toBeInstanceOf(HttpLogFilter::class);
+it('resolves TraceFilter singleton', function (): void {
+    expect($this->app->make(TraceFilter::class))->toBeInstanceOf(TraceFilter::class);
 });
 
-it('resolves HttpLogRedactor singleton', function (): void {
-    expect($this->app->make(HttpLogRedactor::class))->toBeInstanceOf(HttpLogRedactor::class);
+it('resolves TraceRedactor singleton', function (): void {
+    expect($this->app->make(TraceRedactor::class))->toBeInstanceOf(TraceRedactor::class);
 });
 
-it('resolves LoggableScope as singleton', function (): void {
-    $a = $this->app->make(LoggableScope::class);
-    $b = $this->app->make(LoggableScope::class);
+it('resolves TraceableScope as singleton', function (): void {
+    $a = $this->app->make(TraceableScope::class);
+    $b = $this->app->make(TraceableScope::class);
 
     expect($a)->toBe($b);
 });
 
 it('does not call writer when filter rejects entry', function (): void {
     $calls = new ArrayObject;
-    $writer = new class($calls) implements HttpLogWriter
+    $writer = new class($calls) implements TraceWriter
     {
         public function __construct(private readonly ArrayObject $calls) {}
 
-        public function write(HttpLogEntry $entry): void
+        public function write(HttpExchange $entry): void
         {
             $this->calls->append($entry);
         }
@@ -53,15 +53,15 @@ it('does not call writer when filter rejects entry', function (): void {
 
     $wiretap = new Wiretap(
         $writer,
-        new HttpLogFilter(['enabled' => false, 'include_hosts' => [], 'exclude_hosts' => [], 'exclude_paths' => []]),
-        new HttpLogRedactor([
-            'log_request_body' => true, 'log_response_body' => true, 'max_body_bytes' => null,
+        new TraceFilter(['enabled' => false, 'include_hosts' => [], 'exclude_hosts' => [], 'exclude_paths' => []]),
+        new TraceRedactor([
+            'store_request_body' => true, 'store_response_body' => true, 'max_body_bytes' => null,
             'redact_request_headers' => [], 'redact_response_headers' => [], 'redact_body_keys' => [],
             'redact_string' => '[REDACTED]',
         ]),
     );
 
-    $wiretap->record(new HttpLogEntry(
+    $wiretap->capture(new HttpExchange(
         direction: HttpDirection::Outbound, driver: 'test', url: 'https://example.com', method: 'GET',
         requestHeaders: [], requestBody: null, responseStatus: 200, responseHeaders: [], responseBody: null,
         durationMs: 1,
@@ -70,13 +70,13 @@ it('does not call writer when filter rejects entry', function (): void {
     expect($calls)->toHaveCount(0);
 });
 
-it('resolves duration from timer in log()', function (): void {
+it('resolves duration from timer in trace()', function (): void {
     $calls = new ArrayObject;
-    $writer = new class($calls) implements HttpLogWriter
+    $writer = new class($calls) implements TraceWriter
     {
         public function __construct(private readonly ArrayObject $calls) {}
 
-        public function write(HttpLogEntry $entry): void
+        public function write(HttpExchange $entry): void
         {
             $this->calls->append($entry);
         }
@@ -84,9 +84,9 @@ it('resolves duration from timer in log()', function (): void {
 
     $wiretap = new Wiretap(
         $writer,
-        new HttpLogFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'exclude_paths' => []]),
-        new HttpLogRedactor([
-            'log_request_body' => true, 'log_response_body' => true, 'max_body_bytes' => null,
+        new TraceFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'exclude_paths' => []]),
+        new TraceRedactor([
+            'store_request_body' => true, 'store_response_body' => true, 'max_body_bytes' => null,
             'redact_request_headers' => [], 'redact_response_headers' => [], 'redact_body_keys' => [],
             'redact_string' => '[REDACTED]',
         ]),
@@ -94,35 +94,35 @@ it('resolves duration from timer in log()', function (): void {
 
     $timer = $wiretap->start();
     usleep(2_000);
-    $wiretap->log(HttpDirection::Outbound, 'test', 'https://example.com', 'GET', [], null, 200, [], null, $timer);
+    $wiretap->trace(HttpDirection::Outbound, 'test', 'https://example.com', 'GET', [], null, 200, [], null, $timer);
 
     expect($calls)->toHaveCount(1)->and($calls[0]->durationMs)->toBeGreaterThan(0);
 });
 
-it('passes loggable through log() to the written entry', function (): void {
+it('passes traceable through trace() to the written entry', function (): void {
     $calls = new ArrayObject;
-    $writer = new class($calls) implements HttpLogWriter
+    $writer = new class($calls) implements TraceWriter
     {
         public function __construct(private readonly ArrayObject $calls) {}
 
-        public function write(HttpLogEntry $entry): void
+        public function write(HttpExchange $entry): void
         {
             $this->calls->append($entry);
         }
     };
 
-    $loggable = new stdClass;
+    $traceable = new stdClass;
     $wiretap = new Wiretap(
         $writer,
-        new HttpLogFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'exclude_paths' => []]),
-        new HttpLogRedactor([
-            'log_request_body' => true, 'log_response_body' => true, 'max_body_bytes' => null,
+        new TraceFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'exclude_paths' => []]),
+        new TraceRedactor([
+            'store_request_body' => true, 'store_response_body' => true, 'max_body_bytes' => null,
             'redact_request_headers' => [], 'redact_response_headers' => [], 'redact_body_keys' => [],
             'redact_string' => '[REDACTED]',
         ]),
     );
 
-    $wiretap->log(
+    $wiretap->trace(
         direction: HttpDirection::Outbound,
         driver: 'custom-sdk',
         url: 'https://api.example.com/sync',
@@ -132,26 +132,26 @@ it('passes loggable through log() to the written entry', function (): void {
         responseStatus: 200,
         responseHeaders: [],
         responseBody: null,
-        loggable: $loggable,
+        traceable: $traceable,
     );
 
     expect($calls)->toHaveCount(1)
-        ->and($calls[0]->loggable)->toBe($loggable);
+        ->and($calls[0]->traceable)->toBe($traceable);
 });
 
 it('resolves LogWriter when driver is configured as log', function (): void {
     config(['wiretap.driver' => 'log']);
-    $this->app->forgetInstance(HttpLogWriter::class);
+    $this->app->forgetInstance(TraceWriter::class);
 
-    expect($this->app->make(HttpLogWriter::class))
+    expect($this->app->make(TraceWriter::class))
         ->toBeInstanceOf(LogWriter::class);
 });
 
 it('resolves LogWriter with a specific channel when configured', function (): void {
     config(['wiretap.driver' => 'log', 'wiretap.log_channel' => 'slack']);
-    $this->app->forgetInstance(HttpLogWriter::class);
+    $this->app->forgetInstance(TraceWriter::class);
 
-    $writer = $this->app->make(HttpLogWriter::class);
+    $writer = $this->app->make(TraceWriter::class);
 
     expect($writer)->toBeInstanceOf(LogWriter::class);
 
@@ -161,22 +161,22 @@ it('resolves LogWriter with a specific channel when configured', function (): vo
 
 it('throws InvalidArgumentException for an unknown driver value', function (): void {
     config(['wiretap.driver' => 'mongo']);
-    $this->app->forgetInstance(HttpLogWriter::class);
+    $this->app->forgetInstance(TraceWriter::class);
 
-    expect(fn () => $this->app->make(HttpLogWriter::class))
+    expect(fn () => $this->app->make(TraceWriter::class))
         ->toThrow(InvalidArgumentException::class);
 });
 
-it('calls report() when debug is true and the writer throws in record()', function (): void {
+it('calls report() when debug is true and the writer throws in capture()', function (): void {
     config(['wiretap.debug' => true]);
 
     $reported = new ArrayObject;
 
-    $writer = new class($reported) implements HttpLogWriter
+    $writer = new class($reported) implements TraceWriter
     {
         public function __construct(private readonly ArrayObject $reported) {}
 
-        public function write(HttpLogEntry $entry): void
+        public function write(HttpExchange $entry): void
         {
             throw new RuntimeException('Storage failure');
         }
@@ -184,9 +184,9 @@ it('calls report() when debug is true and the writer throws in record()', functi
 
     $wiretap = new Wiretap(
         $writer,
-        new HttpLogFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'exclude_paths' => []]),
-        new HttpLogRedactor([
-            'log_request_body' => true, 'log_response_body' => true, 'max_body_bytes' => null,
+        new TraceFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'exclude_paths' => []]),
+        new TraceRedactor([
+            'store_request_body' => true, 'store_response_body' => true, 'max_body_bytes' => null,
             'redact_request_headers' => [], 'redact_response_headers' => [], 'redact_body_keys' => [],
             'redact_string' => '[REDACTED]',
         ]),
@@ -207,7 +207,7 @@ it('calls report() when debug is true and the writer throws in record()', functi
             }
         };
 
-    $wiretap->record(new HttpLogEntry(
+    $wiretap->capture(new HttpExchange(
         direction: HttpDirection::Outbound, driver: 'test', url: 'https://example.com',
         method: 'GET', requestHeaders: [], requestBody: null, responseStatus: 200,
         responseHeaders: [], responseBody: null, durationMs: 1,
@@ -217,20 +217,20 @@ it('calls report() when debug is true and the writer throws in record()', functi
         ->and($reported[0])->toBeInstanceOf(RuntimeException::class);
 });
 
-it('calls report() when debug is true and an exception occurs inside log()', function (): void {
+it('calls report() when debug is true and an exception occurs inside trace()', function (): void {
     config(['wiretap.debug' => true]);
 
     $reported = new ArrayObject;
-    $writer = new class implements HttpLogWriter
+    $writer = new class implements TraceWriter
     {
-        public function write(HttpLogEntry $entry): void {}
+        public function write(HttpExchange $entry): void {}
     };
 
     $wiretap = new Wiretap(
         $writer,
-        new HttpLogFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'exclude_paths' => []]),
-        new HttpLogRedactor([
-            'log_request_body' => true, 'log_response_body' => true, 'max_body_bytes' => null,
+        new TraceFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'exclude_paths' => []]),
+        new TraceRedactor([
+            'store_request_body' => true, 'store_response_body' => true, 'max_body_bytes' => null,
             'redact_request_headers' => [], 'redact_response_headers' => [], 'redact_body_keys' => [],
             'redact_string' => '[REDACTED]',
         ]),
@@ -251,8 +251,8 @@ it('calls report() when debug is true and an exception occurs inside log()', fun
             }
         };
 
-    // Trigger an exception inside log() by passing a timer closure that throws
-    $wiretap->log(
+    // Trigger an exception inside trace() by passing a timer closure that throws
+    $wiretap->trace(
         direction: HttpDirection::Outbound, driver: 'test', url: 'https://example.com',
         method: 'GET', requestHeaders: [], requestBody: null, responseStatus: 200,
         responseHeaders: [], responseBody: null, timer: function () {

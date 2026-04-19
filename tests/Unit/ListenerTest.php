@@ -9,13 +9,13 @@ use Illuminate\Http\Client\Events\ConnectionFailed;
 use Illuminate\Http\Client\Events\ResponseReceived;
 use Illuminate\Http\Client\Request;
 use Illuminate\Http\Client\Response;
-use Nordkit\Wiretap\Contracts\HttpLogWriter;
-use Nordkit\Wiretap\HttpLogEntry;
-use Nordkit\Wiretap\HttpLogFilter;
-use Nordkit\Wiretap\HttpLogRedactor;
+use Nordkit\Wiretap\Contracts\TraceWriter;
+use Nordkit\Wiretap\HttpExchange;
 use Nordkit\Wiretap\Laravel\Listeners\RecordFailedConnection;
 use Nordkit\Wiretap\Laravel\Listeners\RecordOutboundRequest;
-use Nordkit\Wiretap\Laravel\LoggableScope;
+use Nordkit\Wiretap\Laravel\TraceableScope;
+use Nordkit\Wiretap\Pipeline\TraceFilter;
+use Nordkit\Wiretap\Pipeline\TraceRedactor;
 use Nordkit\Wiretap\Wiretap;
 
 /**
@@ -24,11 +24,11 @@ use Nordkit\Wiretap\Wiretap;
 function makeCapturingWiretap(): array
 {
     $calls = new ArrayObject;
-    $writer = new class($calls) implements HttpLogWriter
+    $writer = new class($calls) implements TraceWriter
     {
         public function __construct(private readonly ArrayObject $calls) {}
 
-        public function write(HttpLogEntry $entry): void
+        public function write(HttpExchange $entry): void
         {
             $this->calls->append($entry);
         }
@@ -36,9 +36,9 @@ function makeCapturingWiretap(): array
 
     $wiretap = new Wiretap(
         $writer,
-        new HttpLogFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'exclude_paths' => []]),
-        new HttpLogRedactor([
-            'log_request_body' => true, 'log_response_body' => true, 'max_body_bytes' => null,
+        new TraceFilter(['enabled' => true, 'include_hosts' => [], 'exclude_hosts' => [], 'exclude_paths' => []]),
+        new TraceRedactor([
+            'store_request_body' => true, 'store_response_body' => true, 'max_body_bytes' => null,
             'redact_request_headers' => [], 'redact_response_headers' => [], 'redact_body_keys' => [],
             'redact_string' => '[REDACTED]',
         ]),
@@ -53,7 +53,7 @@ it('RecordOutboundRequest records a successful response', function (): void {
     $psrRequest = new PsrRequest('GET', 'https://api.example.com/orders', ['Authorization' => 'Bearer token']);
     $psrResponse = new PsrResponse(200, ['Content-Type' => 'application/json'], '{"id":1}');
 
-    $listener = new RecordOutboundRequest($wiretap, new LoggableScope);
+    $listener = new RecordOutboundRequest($wiretap, new TraceableScope);
     $listener->handle(new ResponseReceived(new Request($psrRequest), new Response($psrResponse)));
 
     expect($calls)->toHaveCount(1)
@@ -70,19 +70,19 @@ it('RecordOutboundRequest sets errorMessage to null even for error responses', f
     $psrRequest = new PsrRequest('POST', 'https://api.example.com/pay');
     $psrResponse = new PsrResponse(422, [], '{"error":"invalid"}');
 
-    $listener = new RecordOutboundRequest($wiretap, new LoggableScope);
+    $listener = new RecordOutboundRequest($wiretap, new TraceableScope);
     $listener->handle(new ResponseReceived(new Request($psrRequest), new Response($psrResponse)));
 
     expect($calls[0]->responseStatus)->toBe(422)
         ->and($calls[0]->errorMessage)->toBeNull();
 });
 
-it('RecordOutboundRequest attaches loggable from context', function (): void {
+it('RecordOutboundRequest attaches traceable from context', function (): void {
     [$wiretap, $calls] = makeCapturingWiretap();
 
-    $loggable = new stdClass;
-    $context = new LoggableScope;
-    $context->push($loggable);
+    $traceable = new stdClass;
+    $context = new TraceableScope;
+    $context->push($traceable);
 
     $psrRequest = new PsrRequest('GET', 'https://api.example.com');
     $psrResponse = new PsrResponse(200);
@@ -90,13 +90,13 @@ it('RecordOutboundRequest attaches loggable from context', function (): void {
     $listener = new RecordOutboundRequest($wiretap, $context);
     $listener->handle(new ResponseReceived(new Request($psrRequest), new Response($psrResponse)));
 
-    expect($calls[0]->loggable)->toBe($loggable);
+    expect($calls[0]->traceable)->toBe($traceable);
 });
 
-it('RecordOutboundRequest clears loggable context after use', function (): void {
+it('RecordOutboundRequest clears traceable context after use', function (): void {
     [$wiretap] = makeCapturingWiretap();
 
-    $context = new LoggableScope;
+    $context = new TraceableScope;
     $context->push(new stdClass);
 
     $psrRequest = new PsrRequest('GET', 'https://api.example.com');
@@ -105,12 +105,12 @@ it('RecordOutboundRequest clears loggable context after use', function (): void 
     $listener = new RecordOutboundRequest($wiretap, $context);
     $listener->handle(new ResponseReceived(new Request($psrRequest), new Response($psrResponse)));
 
-    // A second request should NOT carry the loggable
+    // A second request should NOT carry the traceable
     [$wiretap2, $calls2] = makeCapturingWiretap();
     $listener2 = new RecordOutboundRequest($wiretap2, $context);
     $listener2->handle(new ResponseReceived(new Request($psrRequest), new Response($psrResponse)));
 
-    expect($calls2[0]->loggable)->toBeNull();
+    expect($calls2[0]->traceable)->toBeNull();
 });
 
 it('RecordOutboundRequest sets bodies to null for empty requests and responses', function (): void {
@@ -119,7 +119,7 @@ it('RecordOutboundRequest sets bodies to null for empty requests and responses',
     $psrRequest = new PsrRequest('POST', 'https://api.example.com', [], '');
     $psrResponse = new PsrResponse(201, [], '');
 
-    $listener = new RecordOutboundRequest($wiretap, new LoggableScope);
+    $listener = new RecordOutboundRequest($wiretap, new TraceableScope);
     $listener->handle(new ResponseReceived(new Request($psrRequest), new Response($psrResponse)));
 
     expect($calls)->toHaveCount(1)

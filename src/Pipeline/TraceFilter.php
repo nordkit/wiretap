@@ -2,19 +2,21 @@
 
 declare(strict_types=1);
 
-namespace Nordkit\Wiretap;
+namespace Nordkit\Wiretap\Pipeline;
+
+use Nordkit\Wiretap\HttpExchange;
 
 /**
- * Determines whether an HttpLogEntry should be persisted based on config rules.
+ * Determines whether an HttpExchange should be persisted based on config rules.
  *
  * Precedence (first match wins):
  *  1. Global enabled flag is false -> discard.
  *  2. Host in exclude_hosts -> discard.
  *  3. include_hosts non-empty and host NOT in list -> discard.
  *  4. URL matches an exclude_paths regex -> discard.
- *  5. Otherwise -> log.
+ *  5. Otherwise -> trace.
  */
-class HttpLogFilter
+class TraceFilter
 {
     /** @param array{enabled: bool, include_hosts: list<string>, exclude_hosts: list<string>, exclude_paths: list<string>} $config */
     public function __construct(private readonly array $config)
@@ -29,7 +31,7 @@ class HttpLogFilter
     /**
      * Returns true if the entry passes all filter rules and should be persisted.
      */
-    public function shouldLog(HttpLogEntry $entry): bool
+    public function shouldTrace(HttpExchange $entry): bool
     {
         if (! $this->config['enabled']) {
             return false;
