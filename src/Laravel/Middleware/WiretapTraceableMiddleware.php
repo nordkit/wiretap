@@ -44,5 +44,3 @@ class WiretapTraceableMiddleware
         return $next($request);
     }
 }
-
-

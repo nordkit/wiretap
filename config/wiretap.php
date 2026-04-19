@@ -155,7 +155,6 @@ return [
     'store_response_body' => env('WIRETAP_STORE_RESPONSE_BODY', true),
     'max_body_bytes' => env('WIRETAP_MAX_BODY_BYTES', 65_536), // 64 KB; null = unlimited
 
-
     /*
     |--------------------------------------------------------------------------
     | Header redaction

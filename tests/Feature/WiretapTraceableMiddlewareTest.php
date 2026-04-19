@@ -99,4 +99,3 @@ it('clears TraceableScope after pull so consecutive requests do not bleed state'
 
     expect($scope->pull())->toBeNull();
 });
-

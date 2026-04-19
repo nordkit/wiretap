@@ -158,7 +158,7 @@ it('extracts filename from Content-Disposition header for octet-stream', functio
             'Content-Type' => 'application/octet-stream',
             'Content-Disposition' => 'attachment; filename="report.pdf"',
         ],
-        'requestBody' => "binary pdf data",
+        'requestBody' => 'binary pdf data',
     ]));
     expect($entry->requestBody)->toBe('[binary: report.pdf]');
 });
@@ -209,7 +209,7 @@ it('nulls out image/* response body', function (): void {
 it('nulls out video/* response body', function (): void {
     $entry = makeRedactionPipeline()->redact(makeRedactionEntry([
         'responseHeaders' => ['Content-Type' => 'video/mp4'],
-        'responseBody' => "binary mp4 data",
+        'responseBody' => 'binary mp4 data',
     ]));
     expect($entry->responseBody)->toBe('[binary: video/mp4]');
 });
@@ -217,7 +217,7 @@ it('nulls out video/* response body', function (): void {
 it('nulls out audio/* response body', function (): void {
     $entry = makeRedactionPipeline()->redact(makeRedactionEntry([
         'responseHeaders' => ['Content-Type' => 'audio/mpeg'],
-        'responseBody' => "binary mp3 data",
+        'responseBody' => 'binary mp3 data',
     ]));
     expect($entry->responseBody)->toBe('[binary: audio/mpeg]');
 });
@@ -225,7 +225,7 @@ it('nulls out audio/* response body', function (): void {
 it('nulls out application/pdf response body', function (): void {
     $entry = makeRedactionPipeline()->redact(makeRedactionEntry([
         'responseHeaders' => ['Content-Type' => 'application/pdf'],
-        'responseBody' => "%PDF-1.4 binary",
+        'responseBody' => '%PDF-1.4 binary',
     ]));
     expect($entry->responseBody)->toBe('[binary: application/pdf]');
 });
@@ -233,7 +233,7 @@ it('nulls out application/pdf response body', function (): void {
 it('nulls out application/zip response body', function (): void {
     $entry = makeRedactionPipeline()->redact(makeRedactionEntry([
         'responseHeaders' => ['Content-Type' => 'application/zip'],
-        'responseBody' => "PK binary zip data",
+        'responseBody' => 'PK binary zip data',
     ]));
     expect($entry->responseBody)->toBe('[binary: application/zip]');
 });
@@ -245,4 +245,3 @@ it('does not null out application/json body', function (): void {
     ]));
     expect($entry->requestBody)->not->toStartWith('[binary:');
 });
-

@@ -78,4 +78,3 @@ class WiretapInboundMiddleware
         return $response;
     }
 }
-

@@ -9,16 +9,16 @@ use Nordkit\Wiretap\HttpExchange;
 /**
  * Redacts sensitive data from an HttpExchange before it is persisted.
  *
-     * Steps applied in order:
-     *  1. Strip / replace matching request and response headers with "[REDACTED]".
+ * Steps applied in order:
+ *  1. Strip / replace matching request and response headers with "[REDACTED]".
  *      *  2. Replace binary content type bodies with a '[binary: filename.ext]' placeholder
  *      *     (image/*, video/*, audio/*, multipart/form-data, application/octet-stream,
  *      *     application/pdf, application/zip, application/gzip, application/x-tar).
  *      *     The filename is extracted from Content-Disposition or the multipart part header.
  *      *     Falls back to '[binary: content/type]' when no filename is available.
  *      *  3. Recursively replace matching JSON or form-encoded body keys with "[REDACTED]".
-     *  4. Truncate bodies that exceed max_body_bytes.
-     *  5. Null out bodies if store_request_body / store_response_body is false.
+ *  4. Truncate bodies that exceed max_body_bytes.
+ *  5. Null out bodies if store_request_body / store_response_body is false.
  */
 class TraceRedactor
 {
@@ -176,7 +176,7 @@ class TraceRedactor
                 $start = strpos($head, $boundary);
                 if ($start !== false) {
                     $partStart = $start + strlen($boundary);
-                    $partEnd   = strpos($head, "\r\n\r\n", $partStart);
+                    $partEnd = strpos($head, "\r\n\r\n", $partStart);
                     if ($partEnd !== false) {
                         $partHeaders = substr($head, $partStart, $partEnd - $partStart);
                         if (preg_match('/filename=["\']?([^"\';\r\n]+)["\']?/i', $partHeaders, $m)) {

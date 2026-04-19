@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
@@ -9,13 +11,14 @@ use Nordkit\Wiretap\HttpDirection;
 use Nordkit\Wiretap\Laravel\Middleware\WiretapInboundMiddleware;
 use Nordkit\Wiretap\Laravel\Models\Trace;
 use Nordkit\Wiretap\Laravel\TraceableScope;
+use Nordkit\Wiretap\Pipeline\TraceFilter;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     config(['wiretap.inbound.laravel_http' => true]);
 
-    app(\Illuminate\Contracts\Http\Kernel::class)
+    app(Kernel::class)
         ->pushMiddleware(WiretapInboundMiddleware::class);
 });
 
@@ -63,7 +66,7 @@ it('redacts sensitive keys from the inbound request body', function (): void {
 
 it('respects inbound.exclude_paths and does not store a trace for excluded routes', function (): void {
     config(['wiretap.inbound.exclude_paths' => ['#^.*/health$#']]);
-    app()->forgetInstance(\Nordkit\Wiretap\Pipeline\TraceFilter::class);
+    app()->forgetInstance(TraceFilter::class);
 
     Route::get('/health', fn () => response('ok'));
     Route::get('/orders', fn () => response()->json([]));
@@ -81,10 +84,14 @@ it('attaches a traceable Eloquent model from TraceableScope to the stored trace'
         $table->timestamps();
     });
 
-    $model = new class extends \Illuminate\Database\Eloquent\Model {
+    $model = new class extends Model
+    {
         public $table = 'inbound_traceables';
+
         public $incrementing = false;
+
         protected $keyType = 'string';
+
         protected $guarded = [];
     };
 
@@ -106,7 +113,7 @@ it('attaches a traceable Eloquent model from TraceableScope to the stored trace'
 
 it('does not store a trace when wiretap is globally disabled', function (): void {
     config(['wiretap.enabled' => false]);
-    app()->forgetInstance(\Nordkit\Wiretap\Pipeline\TraceFilter::class);
+    app()->forgetInstance(TraceFilter::class);
 
     Route::get('/ping', fn () => response('ok'));
 
