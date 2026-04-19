@@ -96,7 +96,7 @@ All settings are configured via `config/wiretap.php`. Below are the available ke
 | `enabled` | `HTTP_LOGGER_ENABLED` | `true` | Globally enable or disable logging. |
 | `debug` | `HTTP_LOGGER_DEBUG` | `false` | When true, logging exceptions are forwarded to Laravel's `report()` handler rather than swallowed. |
 | `table_name` | — | `http_logs` | The database table used by the Eloquent model. |
-| `model` | — | `HttpLog::class` | Override this to use a custom Eloquent model. |
+| `model` | — | `'Nordkit\Wiretap\Laravel\Models\HttpLog'` | Override this to use a custom Eloquent model. |
 | `driver` | `HTTP_LOGGER_DRIVER` | `database` | Storage backend. Supported: `database`, `log`. |
 | `log_channel` | `HTTP_LOGGER_CHANNEL` | `null` | Specify which channel to use when the driver is `log`. Leaves as null to use the default app channel. |
 | `queue.enabled` | `HTTP_LOGGER_QUEUE_ENABLED` | `true` | Queue logs for async writes. (Set to false for synchronous storage—not recommended for production). |
