@@ -39,8 +39,20 @@ class WiretapInboundMiddleware
     {
         $timer = $this->wiretap->start();
 
-        /** @var Response $response */
-        $response = $next($request);
+        // Capture URL/method/headers before $next() in case the request object
+        // is mutated by other middleware during the pipeline.
+        $url = $request->fullUrl();
+        $method = strtoupper($request->method());
+        $requestHeaders = $this->flattenHeaders($request->headers->all());
+
+        try {
+            /** @var Response $response */
+            $response = $next($request);
+        } finally {
+            // Always pull from TraceableScope so stale state never leaks into
+            // the next request in long-running processes (Octane / Swoole).
+            $traceable = $this->traceableScope->pull();
+        }
 
         $requestBody = $request->getContent();
         $responseBody = $response instanceof StreamedResponse
@@ -50,15 +62,15 @@ class WiretapInboundMiddleware
         $entry = new HttpExchange(
             direction      : HttpDirection::Inbound,
             driver         : 'laravel-inbound',
-            url            : $request->fullUrl(),
-            method         : strtoupper($request->method()),
-            requestHeaders : $this->flattenHeaders($request->headers->all()),
+            url            : $url,
+            method         : $method,
+            requestHeaders : $requestHeaders,
             requestBody    : $requestBody !== '' ? $requestBody : null,
             responseStatus : $response->getStatusCode(),
             responseHeaders: $this->flattenHeaders($response->headers->all()),
             responseBody   : ($responseBody !== '' && $responseBody !== false) ? $responseBody : null,
             durationMs     : $timer(),
-            traceable      : $this->traceableScope->pull(),
+            traceable      : $traceable,
         );
 
         $this->wiretap->capture($entry);

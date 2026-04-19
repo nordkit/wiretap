@@ -14,14 +14,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `inbound.laravel_http` config key (`WIRETAP_INBOUND`, default `false`) — pushes `WiretapInboundMiddleware` onto the global HTTP kernel when enabled.
 - `inbound.include_hosts` / `inbound.exclude_hosts` config keys — filter inbound tracing by the `Host` header of the incoming request (your app's domain). Useful for multi-domain apps or limiting tracing to a specific subdomain (e.g. `webhooks.myapp.com`).
 - `inbound.include_paths` / `inbound.exclude_paths` config keys — regex allowlist and denylist for inbound URLs. `exclude_paths` always takes priority over `include_paths`.
-- `outbound.include_hosts` / `outbound.exclude_hosts` / `outbound.include_paths` / `outbound.exclude_paths` config keys — all outbound filtering config is now nested under `outbound.*` to mirror the `inbound.*` structure. The old top-level `include_hosts`, `exclude_hosts`, and `exclude_paths` keys have been removed.
+- `outbound.include_hosts` / `outbound.include_paths` config keys — outbound-only allowlists, mirroring the new `inbound.*` structure.
 - `Laravel\Middleware\WiretapTraceableMiddleware` — route middleware that binds a route model binding to the current inbound trace. The `wiretap.traceable` alias is registered automatically by the service provider.
 - `->traceable(App\Models\Order::class)` route macro — fluent shorthand for `->middleware('wiretap.traceable:...')`, mirroring the outbound `Http::withTraceable()` pattern.
 - `TraceFilter` is now fully direction-aware: outbound exchanges use `outbound.include_hosts`, `exclude_hosts`, `include_paths`, `exclude_paths`; inbound exchanges use their `inbound.*` equivalents.
 
+### Changed
+- README configuration reference replaced with a short descriptive overview. The published `config/wiretap.php` with its inline comments is now the canonical reference for all available options.
+- **Breaking:** The outbound filter config keys `include_hosts`, `exclude_hosts`, and `exclude_paths` have been moved from the top level into an `outbound` array (`outbound.include_hosts`, `outbound.exclude_hosts`, `outbound.exclude_paths`). Run `php artisan vendor:publish --tag=wiretap-config --force` to update your published config.
+
 ### Fixed
 - `DatabaseWriter` now strips the `traceable` object from `HttpExchange` before passing it to `WriteTraceJob`. This prevents serialization failures when the traceable is an object that cannot be serialized by queue drivers (e.g. anonymous classes).
-- `TraceRedactor::processBody()` now nulls out request and response bodies with `multipart/form-data` or `application/octet-stream` content types. These binary payloads cannot be meaningfully redacted or stored as text.
+- `TraceRedactor::processBody()` now nulls out request and response bodies for all binary content types: `image/*`, `video/*`, `audio/*`, `multipart/form-data`, `application/octet-stream`, `application/pdf`, `application/zip`, `application/gzip`, and `application/x-tar`. Previously only `multipart/form-data` and `application/octet-stream` were handled, causing images, PDFs, and other binary files under `max_body_bytes` to be stored as raw binary data in the database.
 
 ## [2.0.0] - 2026-04-19
 

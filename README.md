@@ -87,39 +87,23 @@ class MyPdoWriter implements TraceWriter
 
 ## Usage
 
-### Configuration Reference
+### Configuration
 
-All settings are configured via `config/wiretap.php`. Below are the available keys, their corresponding environment variables, and descriptions:
+Publish the config file to get started:
 
-| Config Key | Environment Variable | Default | Description |
-|---|---|---|---|
-| `enabled` | `WIRETAP_ENABLED` | `true` | Globally enable or disable tracing. |
-| `debug` | `WIRETAP_DEBUG` | `false` | When true, exceptions are forwarded to Laravel's `report()` handler rather than swallowed. |
-| `table_name` | — | `wiretap_traces` | The database table used by the Eloquent model. |
-| `model` | — | `'Nordkit\Wiretap\Laravel\Models\Trace'` | Override this to use a custom Eloquent model. |
-| `driver` | `WIRETAP_DRIVER` | `database` | Storage backend. Supported: `database`, `log`. |
-| `log_channel` | `WIRETAP_LOG_CHANNEL` | `null` | Specify which channel to use when the driver is `log`. Null uses the default app channel. |
-| `queue.enabled` | `WIRETAP_QUEUE_ENABLED` | `true` | Queue traces for async writes. Set to false for synchronous storage (not recommended in production). |
-| `queue.connection` | `WIRETAP_QUEUE_CONNECTION` | `null` | The queue connection to use. Null defaults to the app default. |
-| `queue.name` | `WIRETAP_QUEUE` | `logging` | The queue name to push trace jobs into. |
-| `outbound.laravel_http` | `WIRETAP_LARAVEL_HTTP` | `true` | Automatically listen to Laravel Http Client events. |
-| `outbound.guzzle` | `WIRETAP_GUZZLE` | `true` | Bind `WiretapClient` into the application container automatically. |
-| `outbound.include_hosts` | — | `[]` | Only trace outbound requests to these hosts. Wildcards supported (e.g. `*.api.com`). Empty = trace all. |
-| `outbound.exclude_hosts` | — | `[]` | Skip outbound requests to these hosts. Takes priority over `outbound.include_hosts`. Wildcards supported. |
-| `outbound.include_paths` | — | `[]` | Only trace outbound requests matching these regex patterns. Empty = trace all paths. |
-| `outbound.exclude_paths` | — | `[]` | Skip outbound requests matching these regex patterns. Takes priority over `outbound.include_paths`. |
-| `inbound.laravel_http` | `WIRETAP_INBOUND` | `false` | Capture all incoming requests via global middleware. Opt-in. |
-| `inbound.include_hosts` | — | `[]` | Only trace inbound requests arriving at these hosts (matched against the `Host` header). Useful for multi-domain apps. Wildcards supported. Empty = trace all. |
-| `inbound.exclude_hosts` | — | `[]` | Skip inbound requests arriving at these hosts. Takes priority over `inbound.include_hosts`. Wildcards supported. |
-| `inbound.include_paths` | — | `[]` | Only trace inbound requests matching these regex patterns. Empty = trace all paths. |
-| `inbound.exclude_paths` | — | `[]` | Skip inbound requests matching these regex patterns. Takes priority over `inbound.include_paths`. |
-| `store_request_body` | `WIRETAP_STORE_REQUEST_BODY` | `true` | Capture the raw HTTP request body. Bodies with `multipart/form-data` or `application/octet-stream` content types are always stored as `null`. |
-| `store_response_body` | `WIRETAP_STORE_RESPONSE_BODY` | `true` | Capture the raw HTTP response body. Bodies with `multipart/form-data` or `application/octet-stream` content types are always stored as `null`. |
-| `max_body_bytes` | `WIRETAP_MAX_BODY_BYTES` | `65536` | Maximum size in bytes of retained bodies (64 KB). Null for unlimited. |
-| `redact_string` | — | `[REDACTED]` | String value used to replace redacted content. |
-| `redact_request_headers` | — | `[...]` | List of case-insensitive request headers to redact. |
-| `redact_response_headers` | — | `[...]` | List of case-insensitive response headers to redact. |
-| `redact_body_keys` | — | `[...]` | List of JSON body keys to scrub recursively. |
+```bash
+php artisan vendor:publish --tag="wiretap-config"
+```
+
+Every option in `config/wiretap.php` is documented with an inline comment. The main areas to know about:
+
+- **`enabled` / `debug`** — kill switch and error visibility. By default, all tracing exceptions are swallowed silently; set `debug = true` to forward them to Laravel's `report()` handler.
+- **`driver`** — `database` (default, queued via `WriteTraceJob`) or `log` (streams to a Laravel log channel).
+- **`outbound.*`** — controls the Laravel HTTP Client and Guzzle adapters, plus host/path filtering for outbound requests.
+- **`inbound.*`** — opt-in capture of incoming requests. Disabled by default (`WIRETAP_INBOUND=false`). Includes the same host/path filtering as outbound.
+- **`store_request_body` / `store_response_body`** — toggle body capture. Binary content types (`image/*`, `video/*`, `audio/*`, `multipart/form-data`, `application/octet-stream`, `application/pdf`, `application/zip`) are always stored as `null` regardless of this setting.
+- **`max_body_bytes`** — caps stored body size to 64 KB by default. Set to `null` for unlimited.
+- **`redact_request_headers` / `redact_response_headers` / `redact_body_keys`** — lists of headers and JSON keys to scrub before anything reaches storage.
 
 ### Laravel Integration
 
