@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.1] - 2026-04-19
+
+### Fixed
+- `HttpExchange` now implements `__serialize()` / `__unserialize()` so that the `HttpDirection` backed enum is stored as its scalar string value when the object is serialized to a queue payload. Previously PHP serialized the enum as a class-based object, causing `unserialize(): Class 'Nordkit\Wiretap\HttpDirection' not found` errors in queue workers when the class was not yet loaded. The `traceable` property is excluded from the serialized payload (it is resolved to morph keys before the job is dispatched and is not needed inside the job).
+
 ## [2.1.0] - 2026-04-19
 
 ### Added
@@ -109,7 +114,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `LoggingMiddleware` for raw Guzzle `HandlerStack` integration.
 - `Wiretap` facade with `log()`, `record()`, and `startTimer()` methods.
 
-[Unreleased]: https://github.com/nordkit/wiretap/compare/v2.1.0...HEAD
+[Unreleased]: https://github.com/nordkit/wiretap/compare/v2.1.1...HEAD
+[2.1.1]: https://github.com/nordkit/wiretap/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/nordkit/wiretap/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/nordkit/wiretap/compare/v1.2.3...v2.0.0
 [1.2.3]: https://github.com/nordkit/wiretap/compare/v1.2.2...v1.2.3

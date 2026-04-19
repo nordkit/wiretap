@@ -147,3 +147,32 @@ it('resolves and extracts traceable morph keys before dispatching the job', func
         return $job->traceableType === 'dummy_model' && $job->traceableId === '12345';
     });
 });
+
+it('can be serialized and unserialized without errors (enum roundtrip)', function (): void {
+    $exchange = new HttpExchange(
+        direction: HttpDirection::Outbound,
+        driver: 'test',
+        url: 'https://api.example.com/ping',
+        method: 'GET',
+        requestHeaders: ['Accept' => 'application/json'],
+        requestBody: null,
+        responseStatus: 200,
+        responseHeaders: [],
+        responseBody: '{"ok":true}',
+        durationMs: 15,
+        errorMessage: null,
+    );
+
+    $job = new WriteTraceJob($exchange, 'order', '99');
+
+    $serialized = serialize($job);
+    $restored = unserialize($serialized);
+
+    expect($restored)->toBeInstanceOf(WriteTraceJob::class)
+        ->and($restored->exchange->direction)->toBe(HttpDirection::Outbound)
+        ->and($restored->exchange->url)->toBe('https://api.example.com/ping')
+        ->and($restored->exchange->responseStatus)->toBe(200)
+        ->and($restored->traceableType)->toBe('order')
+        ->and($restored->traceableId)->toBe('99');
+});
+
