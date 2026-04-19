@@ -9,7 +9,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('traces', function (Blueprint $table): void {
+        Schema::create('wiretap_traces', function (Blueprint $table): void {
             $table->ulid('id')->primary();
             $table->string('direction', 10);
             $table->string('driver', 20);
@@ -31,6 +31,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('traces');
+        Schema::dropIfExists('wiretap_traces');
     }
 };

@@ -34,7 +34,7 @@ class Trace extends Model
     public const UPDATED_AT = null;
 
     /** @var string */
-    protected $table = 'traces';
+    protected $table = 'wiretap_traces';
 
     /** @var list<string> */
     protected $fillable = [
