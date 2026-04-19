@@ -158,3 +158,59 @@ it('nulls out application/octet-stream response body', function (): void {
     expect($entry->responseBody)->toBeNull();
 });
 
+it('nulls out image/* request body', function (): void {
+    $entry = makeRedactionPipeline()->redact(makeRedactionEntry([
+        'requestHeaders' => ['Content-Type' => 'image/png'],
+        'requestBody' => "\x89PNG\r\n\x1a\n binary image data",
+    ]));
+    expect($entry->requestBody)->toBeNull();
+});
+
+it('nulls out image/* response body', function (): void {
+    $entry = makeRedactionPipeline()->redact(makeRedactionEntry([
+        'responseHeaders' => ['Content-Type' => 'image/jpeg'],
+        'responseBody' => "\xFF\xD8\xFF binary jpeg",
+    ]));
+    expect($entry->responseBody)->toBeNull();
+});
+
+it('nulls out video/* response body', function (): void {
+    $entry = makeRedactionPipeline()->redact(makeRedactionEntry([
+        'responseHeaders' => ['Content-Type' => 'video/mp4'],
+        'responseBody' => "binary mp4 data",
+    ]));
+    expect($entry->responseBody)->toBeNull();
+});
+
+it('nulls out audio/* response body', function (): void {
+    $entry = makeRedactionPipeline()->redact(makeRedactionEntry([
+        'responseHeaders' => ['Content-Type' => 'audio/mpeg'],
+        'responseBody' => "binary mp3 data",
+    ]));
+    expect($entry->responseBody)->toBeNull();
+});
+
+it('nulls out application/pdf response body', function (): void {
+    $entry = makeRedactionPipeline()->redact(makeRedactionEntry([
+        'responseHeaders' => ['Content-Type' => 'application/pdf'],
+        'responseBody' => "%PDF-1.4 binary",
+    ]));
+    expect($entry->responseBody)->toBeNull();
+});
+
+it('nulls out application/zip response body', function (): void {
+    $entry = makeRedactionPipeline()->redact(makeRedactionEntry([
+        'responseHeaders' => ['Content-Type' => 'application/zip'],
+        'responseBody' => "PK binary zip data",
+    ]));
+    expect($entry->responseBody)->toBeNull();
+});
+
+it('does not null out application/json body', function (): void {
+    $entry = makeRedactionPipeline()->redact(makeRedactionEntry([
+        'requestHeaders' => ['Content-Type' => 'application/json'],
+        'requestBody' => '{"foo":"bar"}',
+    ]));
+    expect($entry->requestBody)->not->toBeNull();
+});
+

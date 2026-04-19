@@ -11,8 +11,9 @@ use Nordkit\Wiretap\HttpExchange;
  *
      * Steps applied in order:
      *  1. Strip / replace matching request and response headers with "[REDACTED]".
-     *  2. Null out bodies with binary content types (multipart/form-data, application/octet-stream).
-     *  3. Recursively replace matching JSON or form-encoded body keys with "[REDACTED]".
+ *      *  2. Null out bodies with binary content types (image/*, video/*, audio/*, multipart/form-data,
+ *      *     application/octet-stream, application/pdf, application/zip, application/gzip, application/x-tar).
+ *      *  3. Recursively replace matching JSON or form-encoded body keys with "[REDACTED]".
      *  4. Truncate bodies that exceed max_body_bytes.
      *  5. Null out bodies if store_request_body / store_response_body is false.
  */
@@ -92,7 +93,7 @@ class TraceRedactor
             }
         }
 
-        if (str_contains($contentType, 'multipart/form-data') || str_contains($contentType, 'application/octet-stream')) {
+        if ($this->isBinaryContentType($contentType)) {
             return null;
         }
 
@@ -102,6 +103,34 @@ class TraceRedactor
         }
 
         return $this->redactBodyKeys($body, $headers);
+    }
+
+    /**
+     * Returns true for content types whose bodies are inherently binary and cannot be
+     * meaningfully redacted or stored as text. Matched by prefix so subtypes are covered
+     * automatically (e.g. image/png, image/webp, video/mp4).
+     */
+    private function isBinaryContentType(string $contentType): bool
+    {
+        $binaryPrefixes = [
+            'image/',
+            'video/',
+            'audio/',
+            'multipart/form-data',
+            'application/octet-stream',
+            'application/pdf',
+            'application/zip',
+            'application/gzip',
+            'application/x-tar',
+        ];
+
+        foreach ($binaryPrefixes as $prefix) {
+            if (str_starts_with($contentType, $prefix)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
