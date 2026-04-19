@@ -16,6 +16,9 @@
 - Value objects are `final readonly` classes
 - Prefer named constructor arguments in tests for readability
 - No output in tests — use `expect()` assertions only
+- Keep `README.md` up to date when adding or changing features, config keys, or public API
+- Keep `CHANGELOG.md` updated under `[Unreleased]` as work progresses — never leave changes undocumented
+- Keep `config/wiretap.php` in sync with any new or changed configuration keys — inline comments in the config file are the canonical reference for consumers
 
 ## Releasing
 
@@ -43,6 +46,7 @@
 | `TraceRedactor` | Pipeline step — scrubs sensitive data from an exchange |
 | `TraceWriter` | Interface — persists an exchange (database, log, custom) |
 | `WriteTraceJob` | Queued job that writes an exchange via Eloquent |
+
 
 
 
