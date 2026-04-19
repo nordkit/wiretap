@@ -11,8 +11,8 @@ A robust, highly configurable HTTP traffic logger for Laravel applications and G
 - **Native Guzzle Support**: Includes middleware for easily logging raw Guzzle requests.
 - **Advanced Redaction & Security**: Automatically redacts sensitive headers (e.g., API keys, Authorization tokens) and recursively scrubs sensitive JSON payload keys before persisting to the database.
 - **Filtering & Truncation**: Configure maximum payload sizes to preserve database space, and strictly control which requests should be logged.
-- **Eloquent Polymorphism**: Tie HTTP requests directly to Eloquent models using the `withLoggable()` macro and `HasHttpLogs` trait.
-- **Manual Logging Support**: Use the `Wiretap` facade to record logs from custom auto-generated SDKs or vanilla cURL scripts.
+- **Eloquent Polymorphism**: Tie HTTP requests directly to Eloquent models using the `withTraceable()` macro and `HasTraces` trait.
+- **Manual Logging Support**: Use the `Wiretap` facade to record traces from custom auto-generated SDKs or vanilla cURL scripts.
 
 ## Requirements
 
@@ -44,12 +44,12 @@ php artisan vendor:publish --tag="wiretap-config"
 
 ### Non-Laravel Projects
 
-If you are using this package in a standalone PHP application (without the Laravel framework), you will need to manually handle the database schema or inject a custom `HttpLogWriter` into the `Wiretap`.
+If you are using this package in a standalone PHP application (without the Laravel framework), you will need to manually handle the database schema or inject a custom `TraceWriter` into the `Wiretap`.
 
-If you choose to use the built-in database writer (which depends on `illuminate/database`), you must manually run this equivalent raw SQL to create the `http_logs` table:
+If you choose to use the built-in database writer (which depends on `illuminate/database`), you must manually run this equivalent raw SQL to create the `wiretap_traces` table:
 
 ```sql
-CREATE TABLE `http_logs` (
+CREATE TABLE `wiretap_traces` (
   `id` CHAR(26) NOT NULL,
   `direction` VARCHAR(10) NOT NULL,
   `driver` VARCHAR(20) NOT NULL,
@@ -62,25 +62,25 @@ CREATE TABLE `http_logs` (
   `response_body` LONGTEXT NULL,
   `duration_ms` INT UNSIGNED NOT NULL,
   `error_message` TEXT NULL,
-  `loggable_type` VARCHAR(255) NULL,
-  `loggable_id` CHAR(26) NULL,
+  `traceable_type` VARCHAR(255) NULL,
+  `traceable_id` CHAR(26) NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  INDEX `http_logs_loggable_type_loggable_id_created_at_index` (`loggable_type`, `loggable_id`, `created_at`)
+  INDEX `wiretap_traces_traceable_type_traceable_id_created_at_index` (`traceable_type`, `traceable_id`, `created_at`)
 );
 ```
 
-To entirely bypass `illuminate/database`, you can implement the `HttpLogWriter` interface and store your logs using raw PDO, Monolog, or any other solution:
+To entirely bypass `illuminate/database`, you can implement the `TraceWriter` interface and store your traces using raw PDO, Monolog, or any other solution:
 
 ```php
-use Nordkit\Wiretap\Contracts\HttpLogWriter;
-use Nordkit\Wiretap\HttpLogEntry;
+use Nordkit\Wiretap\Contracts\TraceWriter;
+use Nordkit\Wiretap\HttpExchange;
 
-class MyPdoWriter implements HttpLogWriter
+class MyPdoWriter implements TraceWriter
 {
-    public function write(HttpLogEntry $entry): void
+    public function write(HttpExchange $exchange): void
     {
-        // Insert $entry data using raw PDO...
+        // Insert $exchange data using raw PDO...
     }
 }
 ```
@@ -91,29 +91,29 @@ class MyPdoWriter implements HttpLogWriter
 
 All settings are configured via `config/wiretap.php`. Below are the available keys, their corresponding environment variables, and descriptions:
 
-| Config Key | Environment Variable | Default | Description |
-|---|---|---|---|
-| `enabled` | `HTTP_LOGGER_ENABLED` | `true` | Globally enable or disable logging. |
-| `debug` | `HTTP_LOGGER_DEBUG` | `false` | When true, logging exceptions are forwarded to Laravel's `report()` handler rather than swallowed. |
-| `table_name` | — | `http_logs` | The database table used by the Eloquent model. |
-| `model` | — | `'Nordkit\Wiretap\Laravel\Models\HttpLog'` | Override this to use a custom Eloquent model. |
-| `driver` | `HTTP_LOGGER_DRIVER` | `database` | Storage backend. Supported: `database`, `log`. |
-| `log_channel` | `HTTP_LOGGER_CHANNEL` | `null` | Specify which channel to use when the driver is `log`. Leaves as null to use the default app channel. |
-| `queue.enabled` | `HTTP_LOGGER_QUEUE_ENABLED` | `true` | Queue logs for async writes. (Set to false for synchronous storage—not recommended for production). |
-| `queue.connection`| `HTTP_LOGGER_QUEUE_CONNECTION`| `null` | The queue connection to use (null defaults to app default). |
-| `queue.name` | `HTTP_LOGGER_QUEUE` | `logging` | The queue name to push log jobs into. |
-| `outbound.laravel_http`| `HTTP_LOGGER_LARAVEL_HTTP`| `true` | Automatically listen to Laravel Http Client events. |
-| `outbound.guzzle`| `HTTP_LOGGER_GUZZLE`| `true` | Bind `WiretapClient` into the application container automatically. |
-| `log_request_body`| `HTTP_LOGGER_LOG_REQUEST_BODY`| `true` | Capture the raw HTTP request body. |
-| `log_response_body`| `HTTP_LOGGER_LOG_RESPONSE_BODY`| `true`| Capture the raw HTTP response body. |
-| `max_body_bytes` | `HTTP_LOGGER_MAX_BODY_BYTES`| `65536` | Maximum size in bytes of retained bodies (64 KB). Null for unlimited. |
-| `include_hosts` | — | `[]` | Only log requests to these hosts. Wildcards supported (e.g., `*.api.com`). |
-| `exclude_hosts` | — | `[]` | Skip logging to these hosts. Takes priority over `include_hosts`. |
-| `exclude_paths` | — | `[]` | Skip logging requests when full URLs match these regex patterns. |
-| `redact_string` | — | `[REDACTED]` | String value used to replace redacted content. |
-| `redact_request_headers`| — | `[...]` | List of case-insensitive request headers to redact. |
-| `redact_response_headers`| — | `[...]` | List of case-insensitive response headers to redact. |
-| `redact_body_keys`| — | `[...]` | List of JSON body keys to scrub recursively. |
+| Config Key | Environment Variable | Default                                    | Description |
+|---|---|--------------------------------------------|---|
+| `enabled` | `WIRETAP_ENABLED` | `true`                                     | Globally enable or disable tracing. |
+| `debug` | `WIRETAP_DEBUG` | `false`                                    | When true, exceptions are forwarded to Laravel's `report()` handler rather than swallowed. |
+| `table_name` | — | `wiretap_traces`                           | The database table used by the Eloquent model. |
+| `model` | — | `'Nordkit\Wiretap\Laravel\Models\Trace'`   | Override this to use a custom Eloquent model. |
+| `driver` | `WIRETAP_DRIVER` | `database`                                 | Storage backend. Supported: `database`, `log`. |
+| `log_channel` | `WIRETAP_LOG_CHANNEL` | `null`                                     | Specify which channel to use when the driver is `log`. Leaves as null to use the default app channel. |
+| `queue.enabled` | `WIRETAP_QUEUE_ENABLED` | `true`                                     | Queue traces for async writes. (Set to false for synchronous storage—not recommended for production). |
+| `queue.connection`| `WIRETAP_QUEUE_CONNECTION`| `null`                                     | The queue connection to use (null defaults to app default). |
+| `queue.name` | `WIRETAP_QUEUE` | `logging`                                  | The queue name to push trace jobs into. |
+| `outbound.laravel_http`| `WIRETAP_LARAVEL_HTTP`| `true`                                     | Automatically listen to Laravel Http Client events. |
+| `outbound.guzzle`| `WIRETAP_GUZZLE`| `true`                                     | Bind `WiretapClient` into the application container automatically. |
+| `store_request_body`| `WIRETAP_STORE_REQUEST_BODY`| `true`                                     | Capture the raw HTTP request body. |
+| `store_response_body`| `WIRETAP_STORE_RESPONSE_BODY`| `true`                                     | Capture the raw HTTP response body. |
+| `max_body_bytes` | `WIRETAP_MAX_BODY_BYTES`| `65536`                                    | Maximum size in bytes of retained bodies (64 KB). Null for unlimited. |
+| `include_hosts` | — | `[]`                                       | Only trace requests to these hosts. Wildcards supported (e.g., `*.api.com`). |
+| `exclude_hosts` | — | `[]`                                       | Skip tracing to these hosts. Takes priority over `include_hosts`. |
+| `exclude_paths` | — | `[]`                                       | Skip tracing requests when full URLs match these regex patterns. |
+| `redact_string` | — | `[REDACTED]`                               | String value used to replace redacted content. |
+| `redact_request_headers`| — | `[...]`                                    | List of case-insensitive request headers to redact. |
+| `redact_response_headers`| — | `[...]`                                    | List of case-insensitive response headers to redact. |
+| `redact_body_keys`| — | `[...]`                                    | List of JSON body keys to scrub recursively. |
 
 ### Laravel Integration
 
@@ -132,7 +132,7 @@ $response = Http::withHeaders(['X-First' => 'foo'])
 
 #### Polymorphic Relations
 
-You can associate HTTP request logs with your Eloquent models using polymorphic relations. This is useful for tracking which requests belong to a specific record, such as a user, order, or shipment.
+You can associate HTTP traces with your Eloquent models using polymorphic relations. This is useful for tracking which requests belong to a specific record, such as a user, order, or shipment.
 
 When using the Laravel HTTP Client, you can use the built-in macro to attach a model to the request:
 
@@ -141,28 +141,28 @@ use Illuminate\Support\Facades\Http;
 
 $order = Order::find(1);
 
-Http::withLoggable($order)
+Http::withTraceable($order)
     ->post('https://api.example.com/orders/sync', $order->toArray());
 ```
 
-> **Note:** `withLoggable()` stores the model in a per-process singleton and is designed for sequential requests. When using `Http::pool()` with multiple concurrent requests, only the most recently set loggable will be attached. For concurrent use-cases, construct an `HttpLogEntry` directly with the desired `loggable` and call `Wiretap::record()` manually.
+> **Note:** `withTraceable()` stores the model in a per-process singleton and is designed for sequential requests. When using `Http::pool()` with multiple concurrent requests, only the most recently set traceable will be attached. For concurrent use-cases, construct an `HttpExchange` directly with the desired `traceable` and call `Wiretap::capture()` manually.
 
-To easily retrieve the associated logs, add the provided trait (or manually define the `morphMany` relationship) on your Eloquent model:
+To easily retrieve the associated traces, add the provided trait (or manually define the `morphMany` relationship) on your Eloquent model:
 
 ```php
 use Illuminate\Database\Eloquent\Model;
-use Nordkit\Wiretap\Laravel\Concerns\HasHttpLogs;
+use Nordkit\Wiretap\Laravel\Concerns\HasTraces;
 
 class Order extends Model
 {
-    use HasHttpLogs;
+    use HasTraces;
 }
 ```
 
-Now you can access the previous HTTP request logs directly from your model instance:
+Now you can access the previous HTTP traces directly from your model instance:
 
 ```php
-$logs = $order->httpLogs;
+$traces = $order->traces;
 ```
 
 ### Guzzle HTTP Client
@@ -188,15 +188,15 @@ class GitHubService
 }
 ```
 
-You can associate requests with an Eloquent model using `withLoggable()`, mirroring the Laravel HTTP Client behavior:
+You can associate requests with an Eloquent model using `withTraceable()`, mirroring the Laravel HTTP Client behavior:
 
 ```php
 $response = $this->http
-    ->withLoggable($order)
+    ->withTraceable($order)
     ->post('https://api.example.com/orders/sync', ['json' => $order->toArray()]);
 ```
 
-> **Note:** `withLoggable()` is designed for sequential requests. The loggable is consumed (reset to `null`) after the next request is dispatched.
+> **Note:** `withTraceable()` is designed for sequential requests. The traceable is consumed (reset to `null`) after the next request is dispatched.
 
 To pass custom Guzzle config options (e.g. `base_uri`, `timeout`), resolve the client manually with `WiretapClient::make()`:
 
@@ -230,22 +230,22 @@ $client->request('GET', 'https://api.github.com/repos/guzzle/guzzle');
 
 ### Manual Logging
 
-If you need to log requests made outside of Laravel's HTTP Client or Guzzle (for example, raw cURL requests or third-party SDKs), you can easily record entries using the built-in timer and the `Wiretap::log()` helper method. 
+If you need to trace requests made outside of Laravel's HTTP Client or Guzzle (for example, raw cURL requests or third-party SDKs), you can easily record entries using the built-in timer and the `Wiretap::trace()` helper method.
 
-The `log()` method safely swallows all exceptions, guaranteeing that logging will never halt your application execution.
+The `trace()` method safely swallows all exceptions, guaranteeing that tracing will never halt your application execution.
 
 ```php
 use Nordkit\Wiretap\HttpDirection;
 use Nordkit\Wiretap\Laravel\Facades\Wiretap;
 
-// 1. Start the internal logger timer — returns a Closure that yields elapsed ms when called
+// 1. Start the internal timer — returns a Closure that yields elapsed ms when called
 $timer = Wiretap::start();
 
 // 2. Perform your manual request/interaction...
 $response = $customSdk->syncData(['foo' => 'bar']);
 
-// 3. Log the execution using the timer Closure
-Wiretap::log(
+// 3. Trace the execution using the timer Closure
+Wiretap::trace(
     direction: HttpDirection::Outbound,
     driver: 'custom-sdk',
     url: 'https://api.example.com/sync',

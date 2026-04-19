@@ -116,7 +116,7 @@ src/
 
 ### `HttpLog` model → `Trace`
 - Namespace: `Nordkit\Wiretap\Laravel\Models\Trace`
-- `$table = 'http_logs'` → `$table = 'traces'`
+- `$table = 'http_logs'` → `$table = 'wiretap_traces'`
 - Column `loggable_type`, `loggable_id` → `traceable_type`, `traceable_id`
 - Relation method `loggable()` → `traceable()`
 - Updated in: `WriteHttpLogJob`, `HasHttpLogs`, `WiretapServiceProvider`
@@ -156,7 +156,7 @@ src/
 
 | Current key | New key                                         |
 |---|-------------------------------------------------|
-| `table_name: 'http_logs'` | `table_name: 'traces'`                          |
+| `table_name: 'http_logs'` | `table_name: 'wiretap_traces'`                  |
 | `model: '...HttpLog'` | `model: 'Nordkit\Wiretap\Laravel\Models\Trace'` |
 | `log_request_body` | `store_request_body`                            |
 | `log_response_body` | `store_response_body`                           |
@@ -183,7 +183,7 @@ src/
 ## Migration Changes
 
 - Rename file: `create_http_logs_table.php` → `create_traces_table.php`
-- Table: `http_logs` → `traces`
+- Table: `http_logs` → `wiretap_traces`
 - Columns: `loggable_type`, `loggable_id` → `traceable_type`, `traceable_id`
 - Morph: `nullableUlidMorphs('loggable')` → `nullableUlidMorphs('traceable')`
 - Index: update column names accordingly
@@ -251,7 +251,7 @@ src/
 - `withLoggable()` → `withTraceable()` (both Http macro and WiretapClient)
 - All `HTTP_LOGGER_*` env vars → `WIRETAP_*`
 - Config keys `log_request_body` / `log_response_body` → `store_request_body` / `store_response_body`
-- DB table `http_logs` → `traces`
+- DB table `http_logs` → `wiretap_traces`
 - DB columns `loggable_type` / `loggable_id` → `traceable_type` / `traceable_id`
 - This is a **v2.0.0** release
 
