@@ -12,14 +12,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Inbound HTTP tracing** — `Laravel\Middleware\WiretapInboundMiddleware` captures every incoming request and response as an `HttpExchange` with `direction = inbound`. Enable via `WIRETAP_INBOUND=true` (opt-in, disabled by default).
 - `inbound.laravel_http` config key (`WIRETAP_INBOUND`, default `false`) — pushes `WiretapInboundMiddleware` onto the global HTTP kernel when enabled.
-- `inbound.include_hosts` / `inbound.exclude_hosts` config keys — filter inbound tracing by the `Host` header of the incoming request (your app's domain). Useful for multi-domain apps or limiting tracing to a specific subdomain (e.g. `webhooks.myapp.com` for payment provider callbacks). Independent from the outbound `include_hosts` / `exclude_hosts`.
-- `inbound.exclude_paths` config key — regex patterns for inbound URLs to skip, kept separate from the outbound `exclude_paths` list so each direction can be filtered independently.
+- `inbound.include_hosts` / `inbound.exclude_hosts` config keys — filter inbound tracing by the `Host` header of the incoming request (your app's domain). Useful for multi-domain apps or limiting tracing to a specific subdomain (e.g. `webhooks.myapp.com`).
+- `inbound.include_paths` / `inbound.exclude_paths` config keys — regex allowlist and denylist for inbound URLs. `exclude_paths` always takes priority over `include_paths`.
+- `outbound.include_hosts` / `outbound.exclude_hosts` / `outbound.include_paths` / `outbound.exclude_paths` config keys — all outbound filtering config is now nested under `outbound.*` to mirror the `inbound.*` structure. The old top-level `include_hosts`, `exclude_hosts`, and `exclude_paths` keys have been removed.
 - `Laravel\Middleware\WiretapTraceableMiddleware` — route middleware that binds a route model binding to the current inbound trace. The `wiretap.traceable` alias is registered automatically by the service provider.
 - `->traceable(App\Models\Order::class)` route macro — fluent shorthand for `->middleware('wiretap.traceable:...')`, mirroring the outbound `Http::withTraceable()` pattern.
-- `TraceFilter` is now fully direction-aware: outbound exchanges use top-level `include_hosts`, `exclude_hosts`, and `exclude_paths`; inbound exchanges use `inbound.include_hosts`, `inbound.exclude_hosts`, and `inbound.exclude_paths`.
+- `TraceFilter` is now fully direction-aware: outbound exchanges use `outbound.include_hosts`, `exclude_hosts`, `include_paths`, `exclude_paths`; inbound exchanges use their `inbound.*` equivalents.
 
 ### Fixed
-- `DatabaseWriter` now strips the `traceable` object from `HttpExchange` before passing it to `WriteTraceJob`. This prevents serialization failures when the traceable is an object type that cannot be serialized by queue drivers (e.g. anonymous classes), and eliminates unnecessary data from the queued payload.
+- `DatabaseWriter` now strips the `traceable` object from `HttpExchange` before passing it to `WriteTraceJob`. This prevents serialization failures when the traceable is an object that cannot be serialized by queue drivers (e.g. anonymous classes).
+- `TraceRedactor::processBody()` now nulls out request and response bodies with `multipart/form-data` or `application/octet-stream` content types. These binary payloads cannot be meaningfully redacted or stored as text.
 
 ## [2.0.0] - 2026-04-19
 

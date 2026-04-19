@@ -113,8 +113,8 @@ All settings are configured via `config/wiretap.php`. Below are the available ke
 | `inbound.exclude_hosts` | — | `[]` | Skip inbound requests arriving at these hosts. Takes priority over `inbound.include_hosts`. Wildcards supported. |
 | `inbound.include_paths` | — | `[]` | Only trace inbound requests matching these regex patterns. Empty = trace all paths. |
 | `inbound.exclude_paths` | — | `[]` | Skip inbound requests matching these regex patterns. Takes priority over `inbound.include_paths`. |
-| `store_request_body` | `WIRETAP_STORE_REQUEST_BODY` | `true` | Capture the raw HTTP request body. |
-| `store_response_body` | `WIRETAP_STORE_RESPONSE_BODY` | `true` | Capture the raw HTTP response body. |
+| `store_request_body` | `WIRETAP_STORE_REQUEST_BODY` | `true` | Capture the raw HTTP request body. Bodies with `multipart/form-data` or `application/octet-stream` content types are always stored as `null`. |
+| `store_response_body` | `WIRETAP_STORE_RESPONSE_BODY` | `true` | Capture the raw HTTP response body. Bodies with `multipart/form-data` or `application/octet-stream` content types are always stored as `null`. |
 | `max_body_bytes` | `WIRETAP_MAX_BODY_BYTES` | `65536` | Maximum size in bytes of retained bodies (64 KB). Null for unlimited. |
 | `redact_string` | — | `[REDACTED]` | String value used to replace redacted content. |
 | `redact_request_headers` | — | `[...]` | List of case-insensitive request headers to redact. |
