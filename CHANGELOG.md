@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Fixed `Http::withTraceable()` throwing `TypeError` when called directly on the facade by registering the macro on `PendingRequest` instead of `Factory`.
+
 ## [2.3.1] - 2026-04-19
 
 ### Fixed
@@ -156,4 +159,3 @@ php artisan migrate
 [1.2.0]: https://github.com/nordkit/wiretap/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/nordkit/wiretap/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/nordkit/wiretap/releases/tag/v1.0.0
-

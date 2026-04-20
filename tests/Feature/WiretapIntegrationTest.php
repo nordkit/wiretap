@@ -3,11 +3,13 @@
 declare(strict_types=1);
 
 use GuzzleHttp\Psr7\Request as GuzzlePsrRequest;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Events\ConnectionFailed;
 use Illuminate\Http\Client\Request as LaravelHttpRequest;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Schema;
 use Nordkit\Wiretap\Laravel\Models\Trace;
 
 uses(RefreshDatabase::class);
@@ -55,4 +57,40 @@ it('gracefully handles and logs failed HTTP connections', function (): void {
         ->and($log->method)->toBe('GET')
         ->and($log->response_status)->toBeNull()
         ->and($log->error_message)->toContain('Could not resolve host');
+});
+
+it('supports calling Http::withTraceable() directly on the facade and stores traceable morph keys', function (): void {
+    Schema::create('outbound_traceables', function ($table): void {
+        $table->string('id')->primary();
+        $table->timestamps();
+    });
+
+    $model = new class extends Model
+    {
+        public $table = 'outbound_traceables';
+
+        public $incrementing = false;
+
+        protected $keyType = 'string';
+
+        protected $guarded = [];
+    };
+
+    $modelClass = $model::class;
+    $instance = $modelClass::create(['id' => 'order-1']);
+
+    Http::fake([
+        'github.com/*' => Http::response(['ok' => true], 200),
+    ]);
+
+    expect(function () use ($instance): void {
+        Http::withTraceable($instance)
+            ->post('https://github.com/users', ['name' => 'octocat']);
+    })->not->toThrow(TypeError::class);
+
+    $trace = Trace::query()->first();
+
+    expect($trace)->not->toBeNull()
+        ->and($trace->traceable_type)->toBe($modelClass)
+        ->and($trace->traceable_id)->toBe('order-1');
 });
