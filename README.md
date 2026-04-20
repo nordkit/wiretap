@@ -12,7 +12,7 @@ A highly configurable HTTP tracing package, built for Laravel. Wiretap automatic
 - **Advanced Redaction**: Automatically scrubs sensitive headers and recursively redacts JSON payload keys before anything touches storage.
 - **Filtering & Truncation**: Allowlist/denylist hosts, exclude URL patterns, and cap body sizes to keep your storage lean.
 - **Eloquent Polymorphism**: Attach traces to any Eloquent model with `withTraceable()` / `->traceable()` and `HasTraces` — then query them back in one line.
-- **Manual Tracing**: Use `Wiretap::trace()` to capture requests from raw cURL, custom SDKs, or any HTTP client — with built-in timing and safe exception handling.
+- **Manual Tracing**: Use `Wiretap::trace()` to capture requests from raw cURL, custom SDKs, or any HTTP client — with built-in timing, caller attribution (`callerClass` / `callerMethod`), and safe exception handling.
 
 ## Requirements
 
@@ -69,6 +69,8 @@ CREATE TABLE `wiretap_traces` (
   `duration_ms` INT UNSIGNED NOT NULL,
   `error_message` TEXT NULL,
   `ip_address` VARCHAR(45) NULL,
+  `caller_class` VARCHAR(255) NULL,
+  `caller_method` VARCHAR(255) NULL,
   `traceable_type` VARCHAR(255) NULL,
   `traceable_id` CHAR(26) NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -88,7 +90,9 @@ class MyPdoWriter implements TraceWriter
     public function write(HttpExchange $exchange): void
     {
         // Insert $exchange data using raw PDO, e.g.:
-        // $exchange->ipAddress — caller IP (null unless explicitly passed)
+        // $exchange->ipAddress    — caller IP (null unless explicitly passed)
+        // $exchange->callerClass  — originating class name (null unless explicitly passed)
+        // $exchange->callerMethod — originating method name (null unless explicitly passed)
     }
 }
 ```
@@ -162,6 +166,8 @@ Every option in `config/wiretap.php` is documented with an inline comment. The m
 - **`max_body_bytes`** — caps stored body size to 64 KB by default. Set to `null` for unlimited.
 - **`redact_request_headers` / `redact_response_headers` / `redact_body_keys`** — lists of headers and JSON keys to scrub before anything reaches storage.
 - **`pruning.*`** — automatic deletion of old traces via `php artisan wiretap:prune`. Disabled by default, only applies to the `database` driver.
+
+> **Caller attribution:** The `caller_class` and `caller_method` columns are always `null` for automatic Laravel HTTP Client and Guzzle traces. They are only populated when you pass `callerClass` / `callerMethod` to `Wiretap::trace()` manually.
 
 ### Pruning old traces
 
@@ -393,6 +399,8 @@ Wiretap::trace(
     responseBody: json_encode(['status' => 'success']),
     timer: $timer, // Automagically resolves the request duration
     errorMessage: null, // Populate if your manual implementation encountered an error
+    callerClass: self::class,   // Optional: record which class initiated the call
+    callerMethod: __FUNCTION__, // Optional: record which method initiated the call
 );
 ```
 
