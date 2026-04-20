@@ -61,6 +61,8 @@ class Wiretap
         ?Closure $timer = null,
         ?string $errorMessage = null,
         ?string $ipAddress = null,
+        ?string $callerClass = null,
+        ?string $callerMethod = null,
         ?object $traceable = null,
     ): void {
         try {
@@ -79,6 +81,8 @@ class Wiretap
                 durationMs: $durationMs,
                 errorMessage: $errorMessage,
                 ipAddress: $ipAddress,
+                callerClass: $callerClass,
+                callerMethod: $callerMethod,
                 traceable: $traceable,
             );
 

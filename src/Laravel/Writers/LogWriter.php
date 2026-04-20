@@ -34,6 +34,8 @@ class LogWriter implements TraceWriter
             'duration_ms' => $entry->durationMs,
             'error_message' => $entry->errorMessage,
             'ip_address' => $entry->ipAddress,
+            'caller_class' => $entry->callerClass,
+            'caller_method' => $entry->callerMethod,
         ];
 
         Log::channel($this->channel)->info("Wiretap: {$entry->method} {$entry->url}", array_filter($data, fn ($value) => $value !== null));

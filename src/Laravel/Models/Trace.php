@@ -51,6 +51,8 @@ class Trace extends Model
         'duration_ms',
         'error_message',
         'ip_address',
+        'caller_class',
+        'caller_method',
         'traceable_type',
         'traceable_id',
     ];

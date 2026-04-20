@@ -19,6 +19,8 @@ namespace Nordkit\Wiretap;
  * @property-read int $durationMs
  * @property-read string|null $errorMessage
  * @property-read string|null $ipAddress
+ * @property-read string|null $callerClass
+ * @property-read string|null $callerMethod
  * @property-read object|null $traceable
  */
 final readonly class HttpExchange
@@ -40,6 +42,8 @@ final readonly class HttpExchange
         public int $durationMs,
         public ?string $errorMessage = null,
         public ?string $ipAddress = null,
+        public ?string $callerClass = null,
+        public ?string $callerMethod = null,
         public ?object $traceable = null,
     ) {}
 
@@ -66,6 +70,8 @@ final readonly class HttpExchange
             'durationMs' => $this->durationMs,
             'errorMessage' => $this->errorMessage,
             'ipAddress' => $this->ipAddress,
+            'callerClass' => $this->callerClass,
+            'callerMethod' => $this->callerMethod,
         ];
     }
 
@@ -88,6 +94,8 @@ final readonly class HttpExchange
             $this->durationMs = $data['durationMs'];
             $this->errorMessage = $data['errorMessage'];
             $this->ipAddress = $data['ipAddress'] ?? null;
+            $this->callerClass = $data['callerClass'] ?? null;
+            $this->callerMethod = $data['callerMethod'] ?? null;
             $this->traceable = null;
         };
 

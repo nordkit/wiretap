@@ -53,6 +53,8 @@ class WriteTraceJob implements ShouldQueue
             'duration_ms' => $this->exchange->durationMs,
             'error_message' => $this->exchange->errorMessage,
             'ip_address' => $this->exchange->ipAddress,
+            'caller_class' => $this->exchange->callerClass,
+            'caller_method' => $this->exchange->callerMethod,
             'traceable_type' => $this->traceableType,
             'traceable_id' => $this->traceableId,
         ]);

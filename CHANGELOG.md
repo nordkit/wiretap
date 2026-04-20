@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-04-21
+
+### Added
+- `caller_class` and `caller_method` nullable fields on `HttpExchange`, the `Trace` model, and the `wiretap_traces` database table. Pass them via `Wiretap::trace(callerClass: ..., callerMethod: ...)` to record which class and method initiated the HTTP call. A new migration (`2024_01_01_000002_add_caller_to_traces_table.php`) adds the two columns.
+
 ## [2.3.4] - 2026-04-20
 
 ### Fixed
@@ -158,7 +163,8 @@ php artisan migrate
 - `LoggingMiddleware` for raw Guzzle `HandlerStack` integration.
 - `Wiretap` facade with `log()`, `record()`, and `startTimer()` methods.
 
-[Unreleased]: https://github.com/nordkit/wiretap/compare/v2.3.4...HEAD
+[Unreleased]: https://github.com/nordkit/wiretap/compare/v2.4.0...HEAD
+[2.4.0]: https://github.com/nordkit/wiretap/compare/v2.3.4...v2.4.0
 [2.3.4]: https://github.com/nordkit/wiretap/compare/v2.3.3...v2.3.4
 [2.3.3]: https://github.com/nordkit/wiretap/compare/v2.3.2...v2.3.3
 [2.3.2]: https://github.com/nordkit/wiretap/compare/v2.3.1...v2.3.2
