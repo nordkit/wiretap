@@ -11,7 +11,6 @@ use Illuminate\Http\Client\Events\ResponseReceived;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\ServiceProvider;
 use Nordkit\Wiretap\Contracts\TraceWriter;
 use Nordkit\Wiretap\Guzzle\WiretapClient;
@@ -119,7 +118,7 @@ class WiretapServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(__DIR__.'/../../database/migrations');
 
         if ($this->app['config']['wiretap.outbound.laravel_http']) {
-            Http::macro('withTraceable', function (object $traceable): PendingRequest {
+            PendingRequest::macro('withTraceable', function (object $traceable): PendingRequest {
                 /** @var PendingRequest $this */
                 app(TraceableScope::class)->push($traceable);
 
