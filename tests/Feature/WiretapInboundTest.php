@@ -149,3 +149,11 @@ it('does not store ip_address when inbound.store_ip is disabled', function (): v
     expect($trace)->not->toBeNull()
         ->and($trace->ip_address)->toBeNull();
 });
+it('debug: what ip_address value is stored when store_ip is enabled', function (): void {
+    config(['wiretap.inbound.store_ip' => true]);
+    Route::get('/ping', fn () => response('ok'));
+    $this->get('/ping');
+    $trace = Trace::query()->first();
+    dump(['ip_address' => $trace->ip_address]);
+    expect(true)->toBeTrue();
+});

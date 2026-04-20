@@ -101,6 +101,9 @@ class WiretapServiceProvider extends ServiceProvider
         });
     }
 
+    /**
+     * @throws \ReflectionException
+     */
     public function boot(): void
     {
         if ($this->app->runningInConsole()) {
@@ -118,12 +121,7 @@ class WiretapServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(__DIR__.'/../../database/migrations');
 
         if ($this->app['config']['wiretap.outbound.laravel_http']) {
-            PendingRequest::macro('withTraceable', function (object $traceable): PendingRequest {
-                /** @var PendingRequest $this */
-                app(TraceableScope::class)->push($traceable);
-
-                return $this;
-            });
+            PendingRequest::mixin(new Mixins\PendingRequestMixin);
 
             Event::listen(ResponseReceived::class, RecordOutboundRequest::class);
             Event::listen(ConnectionFailed::class, RecordFailedConnection::class);
