@@ -53,6 +53,8 @@ class TraceRedactor
             durationMs     : $entry->durationMs,
             errorMessage   : $entry->errorMessage,
             ipAddress      : $entry->ipAddress,
+            callerClass    : $entry->callerClass,
+            callerMethod   : $entry->callerMethod,
             traceable      : $entry->traceable,
         );
     }

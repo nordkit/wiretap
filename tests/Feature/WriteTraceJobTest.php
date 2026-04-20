@@ -148,6 +148,76 @@ it('resolves and extracts traceable morph keys before dispatching the job', func
     });
 });
 
+it('persists caller_class and caller_method to the database', function (): void {
+    $entry = new HttpExchange(
+        direction      : HttpDirection::Outbound,
+        driver         : 'test',
+        url            : 'https://api.example.com/sync',
+        method         : 'POST',
+        requestHeaders : [],
+        requestBody    : null,
+        responseStatus : 200,
+        responseHeaders: [],
+        responseBody   : null,
+        durationMs     : 10,
+        callerClass    : 'App\\Services\\PaymentService',
+        callerMethod   : 'charge',
+    );
+
+    dispatchJobSync(new WriteTraceJob($entry));
+
+    $trace = Trace::query()->first();
+
+    expect($trace->caller_class)->toBe('App\\Services\\PaymentService')
+        ->and($trace->caller_method)->toBe('charge');
+});
+
+it('stores null for caller_class and caller_method when not provided', function (): void {
+    $entry = new HttpExchange(
+        direction      : HttpDirection::Outbound,
+        driver         : 'test',
+        url            : 'https://api.example.com/ping',
+        method         : 'GET',
+        requestHeaders : [],
+        requestBody    : null,
+        responseStatus : 200,
+        responseHeaders: [],
+        responseBody   : null,
+        durationMs     : 5,
+    );
+
+    dispatchJobSync(new WriteTraceJob($entry));
+
+    $trace = Trace::query()->first();
+
+    expect($trace->caller_class)->toBeNull()
+        ->and($trace->caller_method)->toBeNull();
+});
+
+it('roundtrips caller_class and caller_method through serialization', function (): void {
+    $exchange = new HttpExchange(
+        direction      : HttpDirection::Outbound,
+        driver         : 'test',
+        url            : 'https://api.example.com/ping',
+        method         : 'GET',
+        requestHeaders : [],
+        requestBody    : null,
+        responseStatus : 200,
+        responseHeaders: [],
+        responseBody   : null,
+        durationMs     : 15,
+        callerClass    : 'App\\Services\\OrderService',
+        callerMethod   : 'sync',
+    );
+
+    $job = new WriteTraceJob($exchange);
+
+    $restored = unserialize(serialize($job));
+
+    expect($restored->exchange->callerClass)->toBe('App\\Services\\OrderService')
+        ->and($restored->exchange->callerMethod)->toBe('sync');
+});
+
 it('can be serialized and unserialized without errors (enum roundtrip)', function (): void {
     $exchange = new HttpExchange(
         direction: HttpDirection::Outbound,

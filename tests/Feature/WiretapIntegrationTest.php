@@ -10,6 +10,9 @@ use Illuminate\Http\Client\Events\ConnectionFailed;
 use Illuminate\Http\Client\Request as LaravelHttpRequest;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
+use Nordkit\Wiretap\Contracts\TraceWriter;
+use Nordkit\Wiretap\HttpDirection;
+use Nordkit\Wiretap\Laravel\Facades\Wiretap;
 use Nordkit\Wiretap\Laravel\Models\Trace;
 
 uses(RefreshDatabase::class);
@@ -93,4 +96,33 @@ it('supports calling Http::withTraceable() directly on the facade and stores tra
     expect($trace)->not->toBeNull()
         ->and($trace->traceable_type)->toBe($modelClass)
         ->and($trace->traceable_id)->toBe('order-1');
+});
+
+it('persists caller_class and caller_method via Wiretap::trace()', function (): void {
+    config(['wiretap.queue.enabled' => false]);
+
+    // Re-resolve so the writer and Wiretap pick up the updated queue config.
+    $this->app->forgetInstance(TraceWriter::class);
+    $this->app->forgetInstance(Nordkit\Wiretap\Wiretap::class);
+    Wiretap::clearResolvedInstances();
+
+    Wiretap::trace(
+        direction      : HttpDirection::Outbound,
+        driver         : 'custom-sdk',
+        url            : 'https://api.example.com/payments',
+        method         : 'POST',
+        requestHeaders : [],
+        requestBody    : null,
+        responseStatus : 200,
+        responseHeaders: [],
+        responseBody   : null,
+        callerClass    : 'App\\Services\\PaymentService',
+        callerMethod   : 'charge',
+    );
+
+    $trace = Trace::query()->first();
+
+    expect($trace)->not->toBeNull()
+        ->and($trace->caller_class)->toBe('App\\Services\\PaymentService')
+        ->and($trace->caller_method)->toBe('charge');
 });
