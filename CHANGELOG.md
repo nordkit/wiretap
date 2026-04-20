@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.1] - 2026-04-21
+
+### Fixed
+- `caller_class` and `caller_method` were always `null` in stored traces despite being passed to `Wiretap::trace()`. Two intermediate pipeline steps that clone `HttpExchange` — `TraceRedactor::redact()` and `DatabaseWriter::write()` — were not forwarding the new fields to the cloned instance. Both are now fixed.
+
 ## [2.4.0] - 2026-04-21
 
 ### Added
@@ -163,7 +168,8 @@ php artisan migrate
 - `LoggingMiddleware` for raw Guzzle `HandlerStack` integration.
 - `Wiretap` facade with `log()`, `record()`, and `startTimer()` methods.
 
-[Unreleased]: https://github.com/nordkit/wiretap/compare/v2.4.0...HEAD
+[Unreleased]: https://github.com/nordkit/wiretap/compare/v2.4.1...HEAD
+[2.4.1]: https://github.com/nordkit/wiretap/compare/v2.4.0...v2.4.1
 [2.4.0]: https://github.com/nordkit/wiretap/compare/v2.3.4...v2.4.0
 [2.3.4]: https://github.com/nordkit/wiretap/compare/v2.3.3...v2.3.4
 [2.3.3]: https://github.com/nordkit/wiretap/compare/v2.3.2...v2.3.3
