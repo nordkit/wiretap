@@ -61,7 +61,7 @@ return [
     'queue' => [
         'enabled' => env('WIRETAP_QUEUE_ENABLED', true),
         'connection' => env('WIRETAP_QUEUE_CONNECTION', null), // null = app default
-        'name' => env('WIRETAP_QUEUE', 'logging'),
+        'name' => env('WIRETAP_QUEUE', 'wiretap'),
     ],
 
     /*

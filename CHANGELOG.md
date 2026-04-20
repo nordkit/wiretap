@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.4] - 2026-04-20
+
+### Fixed
+- Corrected the default value of `queue.name` in `config/wiretap.php` from `'logging'` to `'wiretap'` to match the documented `WIRETAP_QUEUE` environment variable and avoid accidental use of a generic queue name.
+
 ## [2.3.3] - 2026-04-20
 
 ### Changed
@@ -153,7 +158,8 @@ php artisan migrate
 - `LoggingMiddleware` for raw Guzzle `HandlerStack` integration.
 - `Wiretap` facade with `log()`, `record()`, and `startTimer()` methods.
 
-[Unreleased]: https://github.com/nordkit/wiretap/compare/v2.3.3...HEAD
+[Unreleased]: https://github.com/nordkit/wiretap/compare/v2.3.4...HEAD
+[2.3.4]: https://github.com/nordkit/wiretap/compare/v2.3.3...v2.3.4
 [2.3.3]: https://github.com/nordkit/wiretap/compare/v2.3.2...v2.3.3
 [2.3.2]: https://github.com/nordkit/wiretap/compare/v2.3.1...v2.3.2
 [2.3.1]: https://github.com/nordkit/wiretap/compare/v2.3.0...v2.3.1
