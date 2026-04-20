@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.2] - 2026-04-20
+
 ### Fixed
 - Fixed `Http::withTraceable()` throwing `TypeError` when called directly on the facade by registering the macro on `PendingRequest` instead of `Factory`.
 
@@ -146,7 +148,8 @@ php artisan migrate
 - `LoggingMiddleware` for raw Guzzle `HandlerStack` integration.
 - `Wiretap` facade with `log()`, `record()`, and `startTimer()` methods.
 
-[Unreleased]: https://github.com/nordkit/wiretap/compare/v2.3.1...HEAD
+[Unreleased]: https://github.com/nordkit/wiretap/compare/v2.3.2...HEAD
+[2.3.2]: https://github.com/nordkit/wiretap/compare/v2.3.1...v2.3.2
 [2.3.1]: https://github.com/nordkit/wiretap/compare/v2.3.0...v2.3.1
 [2.3.0]: https://github.com/nordkit/wiretap/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/nordkit/wiretap/compare/v2.1.1...v2.2.0
